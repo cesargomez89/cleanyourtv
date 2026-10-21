@@ -9,8 +9,11 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.Manifest;
 import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -134,6 +137,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView greeting;
     private View btnInputs;
     private TextView btnWifi;
+    private static final int REQUEST_LOCATION_PERMISSION = 101;
+    private boolean locationPermissionRequested;
+    private boolean wifiConnected;
     private TextView shamsiDate;
     private TextView stats;
     private List<RaceWeekend.Race> raceCalendar;
@@ -2008,6 +2014,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) ethernet = true;
                 if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) wifi = true;
             }
+            wifiConnected = wifi;
             if (!online) {
                 text = getString(R.string.offline);
                 vpn = false;
@@ -2017,6 +2024,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 flame = 4;
                 steady = true;
             } else if (wifi) {
+                ensureLocationPermission();
                 WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = wm != null ? wm.getConnectionInfo() : null;
                 String ssid = info != null ? info.getSSID() : null;
@@ -2111,8 +2119,53 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
+    private void ensureLocationPermission() {
+        if (locationPermissionRequested) return;
+        locationPermissionRequested = true;
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            }, REQUEST_LOCATION_PERMISSION);
+        }
+    }
+
+    private boolean isLocationEnabled() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            return lm != null && lm.isLocationEnabled();
+        } else {
+            int mode = Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
+            return mode != Settings.Secure.LOCATION_MODE_OFF;
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            updateWifiLabel();
+        }
+    }
+
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */
     private void openNetworkPill() {
+        if (wifiConnected) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }, REQUEST_LOCATION_PERMISSION);
+                return;
+            }
+            if (!isLocationEnabled()) {
+                try {
+                    open(systemIntent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    return;
+                } catch (Exception ignored) {
+                }
+            }
+        }
         Intent i = vpnApp.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(vpnApp);
         if (i == null && !vpnApp.isEmpty()) i = getPackageManager().getLaunchIntentForPackage(vpnApp);
         open(i != null ? i : systemIntent(Settings.ACTION_WIFI_SETTINGS));

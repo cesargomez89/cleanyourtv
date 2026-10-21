@@ -9,11 +9,10 @@
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
-         runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
-         FINE" rule does not apply here. -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
-        tools:ignore="CoarseFineLocation" />
+    <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Requested at
+         runtime from the TV. Android 12+ requires declaring and requesting COARSE along with FINE. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->

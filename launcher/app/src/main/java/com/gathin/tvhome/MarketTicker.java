@@ -11,20 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 final class MarketTicker {
-    static final class Result {
-        final String currency;
-        final String headline;
-        final String row1;
-        final String row2;
-
-        Result(String currency, String headline, String row1, String row2) {
-            this.currency = currency;
-            this.headline = headline;
-            this.row1 = row1;
-            this.row2 = row2;
-        }
-    }
-
     private static final String[][] HEADLINE = {
             {"SPY", "SPY", "$"},
             {"^VIX", "VIX", ""}
@@ -42,14 +28,14 @@ final class MarketTicker {
             {"SPCX", "SPCX", "$"}
     };
 
-    static Result fetch() {
+    static String[] fetch() {
         try {
             double[] usd = fetchQuote("USDMXN=X");
             String currency = usd != null ? formatQuote("USD/MXN", "$", usd[0], usd[1]) : null;
             String headline = formatList(HEADLINE, "   ·   ");
             String row1 = formatList(ROW1, "     ");
             String row2 = formatList(ROW2, "     ");
-            return new Result(currency, headline, row1, row2);
+            return new String[]{currency, headline, row1, row2};
         } catch (Exception ignored) {
             return null;
         }
@@ -99,14 +85,9 @@ final class MarketTicker {
 
     private static String formatQuote(String name, String prefix, double price, double change) {
         String sign = change >= 0 ? "+" : "";
-        String priceStr;
-        if (price >= 1000) {
-            priceStr = String.format(Locale.US, "%,.0f", price);
-        } else if (price >= 10) {
-            priceStr = String.format(Locale.US, "%.2f", price);
-        } else {
-            priceStr = String.format(Locale.US, "%.3f", price);
-        }
-        return String.format(Locale.US, "%s %s%s (%s%.2f%%)", name, prefix, priceStr, sign, change);
+        String priceStr = price >= 1000 ? String.format(Locale.US, "%,.0f", price)
+                : price >= 10 ? String.format(Locale.US, "%.2f", price)
+                : String.format(Locale.US, "%.3f", price);
+        return name + " " + prefix + priceStr + " (" + sign + String.format(Locale.US, "%.2f%%)", change);
     }
 }

@@ -1968,7 +1968,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return;
             }
             new Thread(() -> {
-                MarketTicker.Result result = MarketTicker.fetch();
+                String[] result = MarketTicker.fetch();
                 if (result == null) return;
                 handler.post(() -> applyMarketResult(result));
             }).start();
@@ -1976,19 +1976,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     };
 
-    private void applyMarketResult(MarketTicker.Result result) {
-        if (result.currency != null && !result.currency.isEmpty()) {
-            marketCurrencyText = result.currency;
+    private void applyMarketResult(String[] result) {
+        if (result[0] != null && !result[0].isEmpty()) {
+            marketCurrencyText = result[0];
             greeting.setText(marketCurrencyText);
         }
-        if (result.headline != null && !result.headline.isEmpty()) {
-            marketHeadlineText = result.headline;
+        if (result[1] != null && !result[1].isEmpty()) {
+            marketHeadlineText = result[1];
         }
-        if (result.row1 != null && !result.row1.isEmpty()) {
-            marketTickers1Text = result.row1;
+        if (result[2] != null && !result[2].isEmpty()) {
+            marketTickers1Text = result[2];
         }
-        if (result.row2 != null && !result.row2.isEmpty()) {
-            marketTickers2Text = result.row2;
+        if (result[3] != null && !result[3].isEmpty()) {
+            marketTickers2Text = result[3];
         }
         updateMarket();
     }

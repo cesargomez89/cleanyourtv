@@ -37,13 +37,14 @@ Agents SHOULD use `devenv` to provision an isolated, reproducible workspace.
 | Java | OpenJDK 17 (Temurin) | `devenv.nix` (`languages.java`) |
 | Android tools | `adb` 37.0+ | `devenv.nix` (`pkgs.android-tools`) |
 | Preferred CLI | `uv`, `rg`, `fd`, `eza`, `jq`, `sd` | `devenv.nix` (`packages`) |
-| Android SDK | Platform 34, Build-tools 34.0.0 | Host system or Android Studio |
+| Android SDK | Platform 34, Build-tools 34.0.0 | `devenv.nix` (`android`, needs `allowUnfree` in `devenv.yaml`) |
 
 ### Activate Devenv Shell
 
 1. Enter the reproducible environment with `devenv shell`.
-2. Let devenv create `tools/venv` automatically on first entry.
-3. Run project tasks using predefined shell scripts or direct commands.
+2. Let devenv create `tools/venv` on first entry. On macOS it uses Apple's CommandLineTools Python and rebuilds a venv made with another interpreter.
+3. Expect `tools/venv/bin` first on `PATH`, so `python3` has the project dependencies.
+4. Run project tasks using predefined shell scripts or direct commands.
 
 ```bash
 devenv shell

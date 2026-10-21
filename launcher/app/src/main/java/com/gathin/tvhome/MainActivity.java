@@ -310,6 +310,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
         companion = findViewById(R.id.companion);
+        if (companion != null) companion.setElevation(20f * density);
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -530,15 +531,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
-        btnInputs.setOnClickListener(v -> showInputs());
-        btnWifi.setOnClickListener(v -> openNetworkPill());
+        btnInputs.setOnClickListener(v -> {
+            if (companion != null && companionShown) companion.spark(null);
+            showInputs();
+        });
+        btnWifi.setOnClickListener(v -> {
+            if (companion != null && companionShown) companion.spark(null);
+            openNetworkPill();
+        });
         btnWifi.setOnLongClickListener(v -> {
             open(systemIntent(Settings.ACTION_WIFI_SETTINGS));
             return true;
         });
-        btnSettings.setOnClickListener(v -> open(systemIntent(Settings.ACTION_SETTINGS)));
+        btnSettings.setOnClickListener(v -> {
+            if (companion != null && companionShown) companion.spark(null);
+            open(systemIntent(Settings.ACTION_SETTINGS));
+        });
         btnReorder = findViewById(R.id.btnReorder);
-        btnReorder.setOnClickListener(v -> toggleReorder());
+        btnReorder.setOnClickListener(v -> {
+            if (companion != null && companionShown) companion.spark(null);
+            toggleReorder();
+        });
         btnReorder.setVisibility(cfg.reorderButton ? View.VISIBLE : View.GONE);
         btnSettings.setOnLongClickListener(v -> {
             showSettingsMenu();
@@ -575,10 +588,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
 
-        // Hide the glass when focus leaves the tiles.
+        // Hide the glass when focus leaves the tiles; companion hops over top buttons.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
-            if (!onTile) hideGlass();
+            if (!onTile) {
+                hideGlassOnly();
+                if (newF != null && (newF.getId() == R.id.btnInputs
+                        || newF.getId() == R.id.btnWifi
+                        || newF.getId() == R.id.btnReorder
+                        || newF.getId() == R.id.btnSettings)) {
+                    onTopButtonFocused(newF);
+                } else {
+                    hideCompanion();
+                }
+            }
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -1165,29 +1188,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             float compSize = 44f * density;
             float cx = x + w - compSize + (4f * density);
             float cy = y - compSize * 0.45f;
-            if (companionShown) {
-                float oldX = companion.getTranslationX();
-                if (cx > oldX + 4f * density) companion.setScaleX(1f);
-                else if (cx < oldX - 4f * density) companion.setScaleX(-1f);
-            }
-            if (!companionShown) {
-                companionSpringX.cancel();
-                companionSpringY.cancel();
-                companion.setTranslationX(cx);
-                companion.setTranslationY(cy);
-                if (animations) companion.animate().alpha(1f).setDuration(reducedMotion ? 100 : 180).start();
-                else companion.setAlpha(1f);
-                companionShown = true;
-            } else if (!animations) {
-                companionSpringX.cancel();
-                companionSpringY.cancel();
-                companion.setTranslationX(cx);
-                companion.setTranslationY(cy);
-            } else {
-                companion.setHopping(true);
-                companionSpringX.animateToFinalPosition(cx);
-                companionSpringY.animateToFinalPosition(cy - glassScrollShift);
-            }
+            moveCompanion(cx, cy);
         }
         View item = (View) card.getParent();
         if (dockRow && position < COLUMNS) {
@@ -1535,19 +1536,71 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    private void hideGlass() {
+    private void moveCompanion(float cx, float cy) {
+        if (companion == null) return;
+        if (companionShown) {
+            float oldX = companion.getTranslationX();
+            if (cx > oldX + 4f * density) companion.setScaleX(1f);
+            else if (cx < oldX - 4f * density) companion.setScaleX(-1f);
+        }
+        if (!companionShown) {
+            companionSpringX.cancel();
+            companionSpringY.cancel();
+            companion.setTranslationX(cx);
+            companion.setTranslationY(cy);
+            if (animations) companion.animate().alpha(1f).setDuration(reducedMotion ? 100 : 180).start();
+            else companion.setAlpha(1f);
+            companionShown = true;
+        } else if (!animations) {
+            companionSpringX.cancel();
+            companionSpringY.cancel();
+            companion.setTranslationX(cx);
+            companion.setTranslationY(cy);
+        } else {
+            companion.setHopping(true);
+            companionSpringX.animateToFinalPosition(cx);
+            companionSpringY.animateToFinalPosition(cy - glassScrollShift);
+        }
+    }
+
+    private void onTopButtonFocused(View button) {
+        if (companion == null) return;
+        if (button.getWidth() == 0) {
+            button.post(() -> {
+                if (button.isFocused()) onTopButtonFocused(button);
+            });
+            return;
+        }
+        Rect r = tileRect;
+        r.set(0, 0, button.getWidth(), button.getHeight());
+        root.offsetDescendantRectToMyCoords(button, r);
+        float compSize = 44f * density;
+        float cx = r.right - compSize + (4f * density);
+        float cy = r.top - compSize * 0.45f;
+        moveCompanion(cx, cy);
+    }
+
+    private void hideGlassOnly() {
         if (glassShown) {
             glassShown = false;
             glass.animate().cancel();
             if (animations) glass.animate().alpha(0f).setDuration(160).start();
             else glass.setAlpha(0f);
         }
+    }
+
+    private void hideCompanion() {
         if (companionShown && companion != null) {
             companionShown = false;
             companion.animate().cancel();
             if (animations) companion.animate().alpha(0f).setDuration(160).start();
             else companion.setAlpha(0f);
         }
+    }
+
+    private void hideGlass() {
+        hideGlassOnly();
+        hideCompanion();
     }
 
     @Override

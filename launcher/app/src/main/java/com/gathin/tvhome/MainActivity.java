@@ -653,6 +653,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         updateInputsButton();
         if (showStats) startStats();
+        handler.removeCallbacks(marketRefreshRunnable);
+        handler.post(marketRefreshRunnable);
         sky.update();
         wallpaperPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
@@ -758,6 +760,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.animate().cancel();
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
+        handler.removeCallbacks(marketRefreshRunnable);
         stopStats();
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
@@ -1956,6 +1959,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     // ---- market ticker board ------------------------------------------------------------------------
+
+    private final Runnable marketRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if ((marketHeadlineText == null || marketHeadlineText.isEmpty())
+                    && (marketCurrencyText == null || marketCurrencyText.isEmpty())) {
+                return;
+            }
+            new Thread(() -> {
+                MarketTicker.Result result = MarketTicker.fetch();
+                if (result == null) return;
+                handler.post(() -> applyMarketResult(result));
+            }).start();
+            handler.postDelayed(this, 15 * 60 * 1000);
+        }
+    };
+
+    private void applyMarketResult(MarketTicker.Result result) {
+        if (result.currency != null && !result.currency.isEmpty()) {
+            marketCurrencyText = result.currency;
+            greeting.setText(marketCurrencyText);
+        }
+        if (result.headline != null && !result.headline.isEmpty()) {
+            marketHeadlineText = result.headline;
+        }
+        if (result.row1 != null && !result.row1.isEmpty()) {
+            marketTickers1Text = result.row1;
+        }
+        if (result.row2 != null && !result.row2.isEmpty()) {
+            marketTickers2Text = result.row2;
+        }
+        updateMarket();
+    }
 
     private void updateMarket() {
         if (marketPanel == null) return;

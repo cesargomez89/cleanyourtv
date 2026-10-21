@@ -1,4 +1,2 @@
-# Shrink and optimise, but keep class and method names: the size win comes from dropping unused
-# AndroidX code, not from renaming, and readable stack traces matter more in a sideloaded app
-# where crash reports arrive as screenshots.
--dontobfuscate
+# Shrink and optimise, keeping all our launcher class and member names readable:
+-keepnames class com.gathin.tvhome.** { *; }

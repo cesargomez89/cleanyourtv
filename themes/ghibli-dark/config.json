@@ -3,9 +3,11 @@
     "com.nuvio.tv",
     "org.smarttube.beta",
     "com.wbd.stream",
-    "com.disney.disneyplus"
+    "com.disney.disneyplus",
+    "com.apple.atve.androidtv.appletv",
+    "com.netflix.ninja"
   ],
-  "columns": 4,
+  "columns": 6,
   "rows_below_dock": 0,
   "background_color": "#080E14",
   "wallpaper": true,

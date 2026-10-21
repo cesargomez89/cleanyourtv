@@ -274,7 +274,7 @@
                         android:format12Hour="h:mm"
                         android:format24Hour="HH:mm"
                         android:textColor="#FFFFFFFF"
-                        android:textSize="52sp"
+                        android:textSize="34sp"
                         android:fontFamily="@font/outfit_light"
                         android:letterSpacing="-0.04"
                         android:includeFontPadding="false" />
@@ -285,22 +285,22 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:layout_gravity="bottom"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="4dp"
                         android:format12Hour="a"
                         android:format24Hour=""
                         android:textColor="#B3FFFFFF"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:fontFamily="@font/outfit_medium"
                         android:letterSpacing="0.08"
                         android:textAllCaps="true" />
 
                     <View
                         android:layout_width="1dp"
-                        android:layout_height="26dp"
+                        android:layout_height="18dp"
                         android:layout_gravity="bottom"
                         android:layout_marginStart="16dp"
                         android:layout_marginEnd="16dp"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="4dp"
                         android:background="#33FFFFFF" />
 
                     <LinearLayout
@@ -308,7 +308,7 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom"
-                        android:layout_marginBottom="9dp"
+                        android:layout_marginBottom="4dp"
                         android:orientation="vertical">
 
                         <!-- Shamsi date ("27 Mehr 1405"), shown when shamsi_date is on. -->
@@ -373,7 +373,7 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_alignBottom="@id/leftBlock"
-                android:layout_marginBottom="6dp"
+                android:layout_marginBottom="2dp"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="horizontal">

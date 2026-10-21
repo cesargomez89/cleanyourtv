@@ -107,6 +107,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private WallpaperPlayer wallpaperPlayer;
     private GlassView glass;
+    private CompanionView companion;
+    private SpringAnimation companionSpringX, companionSpringY;
+    private boolean companionShown;
     private View ambient;
     private TextView heroName;
     /** The top shelf: heroName, plus the cinematic shelf's "Last opened" line and dock position dots. */
@@ -300,6 +303,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sky = findViewById(R.id.sky);
         sky.setIntensity(cfg.skyIntensity);
         glass = findViewById(R.id.glass);
+        companion = findViewById(R.id.companion);
         if (festive) glass.setAccent(festival.accentColor());
         ambient = findViewById(R.id.ambient);
         // The glow is one bitmap, so its alpha can be applied while drawing it. Otherwise every frame of
@@ -448,7 +452,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             grid.post(this::refitGlass);
         });
 
-        // Keep the glass glued to its tile while the grid scrolls.
+        // Keep the glass and companion glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
@@ -456,6 +460,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 glassTargetY -= dy;
                 glassScrollShift -= dy;
                 glass.setTranslationY(glass.getTranslationY() - dy);
+                if (companionShown && companion != null) {
+                    companion.setTranslationY(companion.getTranslationY() - dy);
+                }
             }
         });
 
@@ -481,6 +488,37 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             } else {
                 s.setSpring(new SpringForce().setStiffness(advancedEffects ? 320f : 260f)
                         .setDampingRatio(advancedEffects ? 0.76f : 0.58f));
+            }
+        }
+
+        if (companion != null) {
+            companionSpringX = new SpringAnimation(companion, DynamicAnimation.TRANSLATION_X);
+            companionSpringY = new SpringAnimation(companion, new FloatPropertyCompat<View>("companionContentY") {
+                @Override
+                public float getValue(View v) {
+                    return v.getTranslationY() - glassScrollShift;
+                }
+
+                @Override
+                public void setValue(View v, float value) {
+                    v.setTranslationY(value + glassScrollShift);
+                }
+            });
+            DynamicAnimation.OnAnimationEndListener hopEnd = (anim, canceled, val, vel) -> {
+                if (!companionSpringX.isRunning() && !companionSpringY.isRunning()) {
+                    companion.setHopping(false);
+                }
+            };
+            companionSpringX.addEndListener(hopEnd);
+            companionSpringY.addEndListener(hopEnd);
+            for (SpringAnimation s : new SpringAnimation[]{companionSpringX, companionSpringY}) {
+                if (reducedMotion) {
+                    s.setSpring(new SpringForce().setStiffness(1400f).setDampingRatio(0.95f));
+                    s.setMinimumVisibleChange(1.5f);
+                } else {
+                    s.setSpring(new SpringForce().setStiffness(advancedEffects ? 320f : 260f)
+                            .setDampingRatio(advancedEffects ? 0.76f : 0.58f));
+                }
             }
         }
 
@@ -1113,6 +1151,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             springX.animateToFinalPosition(x);
             springY.animateToFinalPosition(y - glassScrollShift);
         }
+
+        if (companion != null) {
+            float compSize = 44f * density;
+            float cx = x + w - compSize + (4f * density);
+            float cy = y - compSize * 0.45f;
+            if (companionShown) {
+                float oldX = companion.getTranslationX();
+                if (cx > oldX + 4f * density) companion.setScaleX(1f);
+                else if (cx < oldX - 4f * density) companion.setScaleX(-1f);
+            }
+            if (!companionShown) {
+                companionSpringX.cancel();
+                companionSpringY.cancel();
+                companion.setTranslationX(cx);
+                companion.setTranslationY(cy);
+                if (animations) companion.animate().alpha(1f).setDuration(reducedMotion ? 100 : 180).start();
+                else companion.setAlpha(1f);
+                companionShown = true;
+            } else if (!animations) {
+                companionSpringX.cancel();
+                companionSpringY.cancel();
+                companion.setTranslationX(cx);
+                companion.setTranslationY(cy);
+            } else {
+                companion.setHopping(true);
+                companionSpringX.animateToFinalPosition(cx);
+                companionSpringY.animateToFinalPosition(cy - glassScrollShift);
+            }
+        }
         View item = (View) card.getParent();
         if (dockRow && position < COLUMNS) {
             // Dock: park it at the bottom of the screen and show the top shelf for this app.
@@ -1460,11 +1527,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void hideGlass() {
-        if (!glassShown) return;
-        glassShown = false;
-        glass.animate().cancel();
-        if (animations) glass.animate().alpha(0f).setDuration(160).start();
-        else glass.setAlpha(0f);
+        if (glassShown) {
+            glassShown = false;
+            glass.animate().cancel();
+            if (animations) glass.animate().alpha(0f).setDuration(160).start();
+            else glass.setAlpha(0f);
+        }
+        if (companionShown && companion != null) {
+            companionShown = false;
+            companion.animate().cancel();
+            if (animations) companion.animate().alpha(0f).setDuration(160).start();
+            else companion.setAlpha(0f);
+        }
+    }
+
+    @Override
+    public void onTileClicked(int position) {
+        if (companion != null && companionShown) {
+            companion.spark(null);
+        }
     }
 
     // ---- optional system stats (config.xml show_stats) --------------------------------------------

@@ -1,7 +1,7 @@
 {
-  "dock_apps": ["com.netflix.ninja", "com.amazon.amazonvideo.livingroom", "com.google.android.youtube.tv", "in.startv.hotstar"],
+  "dock_apps": ["com.nuvio.tv", "org.smarttube.beta", "com.wbd.stream", "com.disney.disneyplus", "com.apple.atve.androidtv.appletv", "com.netflix.ninja"],
   "hidden_apps": ["com.mediatek.wwtv.tvcenter", "com.mitv.gallery"],
-  "columns": 4,
+  "columns": 6,
   "rows_below_dock": 0,
   "reduced_motion": false,
   "background_color": "#000000",

@@ -104,6 +104,10 @@ final class Config {
     final List<RaceWeekend.Race> raceCalendar;
     /** Cinematic top shelf (config.xml, cinematic_home): the focused dock app's artwork behind a larger shelf. */
     final boolean cinematicHome;
+    /** Market ticker board: category kicker, headline rates, and individual stock tickers. */
+    final String marketKicker;
+    final String marketHeadline;
+    final String marketTickers;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
                    String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -114,7 +118,8 @@ final class Config {
                    int[] settingsKeycodes, boolean settingsKeyPanel, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
                    int wallpaperRotationMinutes, int wallpaperDim, boolean overlayApplied,
                    Festival festival, int[] inputKeycodes, List<String> appKeys,
-                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome) {
+                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome,
+                   String marketKicker, String marketHeadline, String marketTickers) {
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.dockApps = Collections.unmodifiableList(dockApps);
@@ -156,6 +161,9 @@ final class Config {
         this.festival = festival;
         this.raceCalendar = Collections.unmodifiableList(raceCalendar);
         this.cinematicHome = cinematicHome;
+        this.marketKicker = marketKicker;
+        this.marketHeadline = marketHeadline;
+        this.marketTickers = marketTickers;
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -284,6 +292,10 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
+        String marketKicker = json == null ? "" : string(json, "market_kicker", "");
+        String marketHeadline = json == null ? "" : string(json, "market_headline", "");
+        String marketTickers = json == null ? "" : string(json, "market_tickers", "");
+
         return new Config(dock, fillDock, hidden, liveTv, liveTvAction, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, inputAction,
@@ -291,7 +303,8 @@ final class Config {
                 shamsi, greetingName, moduleCards, reducedMotion, dockTitle, dockRow, reorderButton, vpn, homeSettings, showStats, library, background,
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, applied,
-                festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic);
+                festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
+                marketKicker, marketHeadline, marketTickers);
     }
 
     /**

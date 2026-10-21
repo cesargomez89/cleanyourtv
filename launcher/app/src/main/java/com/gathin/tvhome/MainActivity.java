@@ -136,6 +136,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    private View marketPanel;
+    private TextView marketKicker, marketHeadline, marketTickers;
+    private String marketKickerText, marketHeadlineText, marketTickersText;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -261,6 +264,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateRace();
+            updateMarket();
             updateWifiLabel();
             sky.update();
             wallpaperPlayer.update();
@@ -324,6 +328,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
+        marketPanel = findViewById(R.id.marketPanel);
+        marketKicker = findViewById(R.id.marketKicker);
+        marketHeadline = findViewById(R.id.marketHeadline);
+        marketTickers = findViewById(R.id.marketTickers);
+        marketKickerText = cfg.marketKicker;
+        marketHeadlineText = cfg.marketHeadline;
+        marketTickersText = cfg.marketTickers;
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -591,6 +602,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rebuildOnResume = false;
         updateGreeting();
         updateRace();
+        updateMarket();
         updateWifiLabel();
         updateInputsButton();
         if (showStats) startStats();
@@ -1167,6 +1179,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
 
+        if (marketPanel != null && marketPanel.getVisibility() == View.VISIBLE && marketPanel.getAlpha() < 1f) {
+            if (animations) marketPanel.animate().alpha(1f).setDuration(260).start();
+            else marketPanel.setAlpha(1f);
+        }
+
         if (!heroShown) {
             stopAmbientAnimation();
             hero.animate().cancel();
@@ -1426,10 +1443,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             hero.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();
             ambient.animate().alpha(0f).setDuration(reducedMotion ? 140 : 300).start();
             heroArt.animate().alpha(0f).setDuration(reducedMotion ? 140 : 300).start();
+            if (marketPanel != null && marketPanel.getVisibility() == View.VISIBLE) {
+                marketPanel.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();
+            }
         } else {
             hero.setAlpha(0f);
             ambient.setAlpha(0f);
             heroArt.setAlpha(0f);
+            if (marketPanel != null && marketPanel.getVisibility() == View.VISIBLE) {
+                marketPanel.setAlpha(0f);
+            }
         }
     }
 
@@ -1792,6 +1815,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         RaceWeekend.State s = RaceWeekend.at(raceCalendar, java.time.Instant.now());
         if (s == null) {
             racePanel.setVisibility(View.GONE);
+            updateMarket();
             return;
         }
         RaceWeekend.Race race = s.race;
@@ -1832,6 +1856,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         raceSessions.setText(row);
         racePanel.setVisibility(View.VISIBLE);
+        if (marketPanel != null) marketPanel.setVisibility(View.GONE);
+    }
+
+    // ---- market ticker board ------------------------------------------------------------------------
+
+    private void updateMarket() {
+        if (marketPanel == null) return;
+        if (racePanel != null && racePanel.getVisibility() == View.VISIBLE) {
+            marketPanel.setVisibility(View.GONE);
+            return;
+        }
+        if (marketHeadlineText != null && !marketHeadlineText.isEmpty()) {
+            if (marketKicker != null) {
+                marketKicker.setText(marketKickerText.isEmpty() ? "MARKETS" : marketKickerText);
+            }
+            if (marketHeadline != null) marketHeadline.setText(marketHeadlineText);
+            if (marketTickers != null) marketTickers.setText(marketTickersText);
+            marketPanel.setVisibility(View.VISIBLE);
+        } else {
+            marketPanel.setVisibility(View.GONE);
+        }
     }
 
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */

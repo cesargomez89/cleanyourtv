@@ -500,15 +500,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         if (companion != null) {
             companionSpringX = new SpringAnimation(companion, DynamicAnimation.TRANSLATION_X);
-            companionSpringY = new SpringAnimation(companion, new FloatPropertyCompat<View>("companionContentY") {
+            companionSpringY = new SpringAnimation(companion, new FloatPropertyCompat<CompanionView>("companionContentY") {
                 @Override
-                public float getValue(View v) {
-                    return v.getTranslationY() - glassScrollShift;
+                public float getValue(CompanionView v) {
+                    return v.getRestY() - glassScrollShift;
                 }
 
                 @Override
-                public void setValue(View v, float value) {
-                    v.setTranslationY(value + glassScrollShift);
+                public void setValue(CompanionView v, float value) {
+                    v.setRestY(value + glassScrollShift);
                 }
             });
             DynamicAnimation.OnAnimationEndListener hopEnd = (anim, canceled, val, vel) -> {
@@ -532,11 +532,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> {
-            if (companion != null && companionShown) companion.spark(null);
+            sparkCompanion();
             showInputs();
         });
         btnWifi.setOnClickListener(v -> {
-            if (companion != null && companionShown) companion.spark(null);
+            sparkCompanion();
             openNetworkPill();
         });
         btnWifi.setOnLongClickListener(v -> {
@@ -544,12 +544,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return true;
         });
         btnSettings.setOnClickListener(v -> {
-            if (companion != null && companionShown) companion.spark(null);
+            sparkCompanion();
             open(systemIntent(Settings.ACTION_SETTINGS));
         });
         btnReorder = findViewById(R.id.btnReorder);
         btnReorder.setOnClickListener(v -> {
-            if (companion != null && companionShown) companion.spark(null);
+            sparkCompanion();
             toggleReorder();
         });
         btnReorder.setVisibility(cfg.reorderButton ? View.VISIBLE : View.GONE);
@@ -1547,7 +1547,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             companionSpringX.cancel();
             companionSpringY.cancel();
             companion.setTranslationX(cx);
-            companion.setTranslationY(cy);
+            companion.setRestY(cy);
             if (animations) companion.animate().alpha(1f).setDuration(reducedMotion ? 100 : 180).start();
             else companion.setAlpha(1f);
             companionShown = true;
@@ -1555,8 +1555,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             companionSpringX.cancel();
             companionSpringY.cancel();
             companion.setTranslationX(cx);
-            companion.setTranslationY(cy);
+            companion.setRestY(cy);
         } else {
+            // Same spot (a refit of the focused tile): nothing to hop to.
+            boolean moving = companionSpringX.isRunning() || companionSpringY.isRunning();
+            if (!moving && Math.abs(cx - companion.getTranslationX()) < 1f
+                    && Math.abs(cy - companion.getRestY()) < 1f) return;
             companion.setHopping(true);
             companionSpringX.animateToFinalPosition(cx);
             companionSpringY.animateToFinalPosition(cy - glassScrollShift);
@@ -1571,8 +1575,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             });
             return;
         }
+        // The drawing rect includes the button's own scroll, which offsetDescendantRectToMyCoords subtracts again:
+        // a single-line, ellipsized TextView (the Wi-Fi pill) scrolls its centred text by hundreds of thousands of px.
         Rect r = tileRect;
-        r.set(0, 0, button.getWidth(), button.getHeight());
+        button.getDrawingRect(r);
         root.offsetDescendantRectToMyCoords(button, r);
         float compSize = 44f * density;
         float cx = r.right - compSize + (4f * density);
@@ -1589,9 +1595,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
+    private void sparkCompanion() {
+        if (companion != null && companionShown) companion.spark(animations && !reducedMotion);
+    }
+
     private void hideCompanion() {
         if (companionShown && companion != null) {
             companionShown = false;
+            companion.cancelSpark();
             companion.animate().cancel();
             if (animations) companion.animate().alpha(0f).setDuration(160).start();
             else companion.setAlpha(0f);
@@ -1605,9 +1616,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onTileClicked(int position) {
-        if (companion != null && companionShown) {
-            companion.spark(null);
-        }
+        sparkCompanion();
     }
 
     // ---- optional system stats (config.xml show_stats) --------------------------------------------

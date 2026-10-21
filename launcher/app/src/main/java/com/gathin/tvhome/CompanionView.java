@@ -1,5 +1,8 @@
 package com.gathin.tvhome;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -30,23 +33,34 @@ public class CompanionView extends View {
 
     private int currentFrame = 0;
     private boolean hopping = false;
-    private boolean sparking = false;
     private boolean attached = false;
+    /** Height of the select hop in px: kept apart from translationY, which the focus springs own. */
+    private float lift = 0f;
+    private ValueAnimator sparkAnimator;
 
     private final Runnable ticker = new Runnable() {
         @Override
         public void run() {
-            if (!attached || getVisibility() != VISIBLE) return;
-            if (sparking) return;
+            if (!isRunning() || isSparking()) return;
             if (hopping) {
                 currentFrame = (currentFrame == 2) ? 3 : 2;
-                invalidate();
-                postDelayed(this, HOP_TICK_MS);
+                schedule(this, HOP_TICK_MS);
             } else {
                 currentFrame = (currentFrame == 0) ? 1 : 0;
-                invalidate();
-                postDelayed(this, IDLE_TICK_MS);
+                schedule(this, IDLE_TICK_MS);
             }
+            invalidate();
+        }
+    };
+
+    /** Touchdown frame after a hop, then back to idle. */
+    private final Runnable land = new Runnable() {
+        @Override
+        public void run() {
+            if (hopping || isSparking()) return;
+            currentFrame = 0;
+            invalidate();
+            schedule(ticker, IDLE_TICK_MS);
         }
     };
 
@@ -69,45 +83,90 @@ public class CompanionView extends View {
         }
     }
 
+    private boolean isSparking() {
+        return sparkAnimator != null;
+    }
+
+    /** Frames only advance while the view is attached, visible and its window is in front. */
+    private boolean isRunning() {
+        return attached && getVisibility() == VISIBLE && getWindowVisibility() == VISIBLE;
+    }
+
+    /** One pending callback per runnable, so quick state changes never stack up parallel tick chains. */
+    private void schedule(Runnable r, long delay) {
+        removeCallbacks(r);
+        postDelayed(r, delay);
+    }
+
+    private void stopTicking() {
+        removeCallbacks(ticker);
+        removeCallbacks(land);
+    }
+
+    private void restartTicking() {
+        stopTicking();
+        if (isRunning() && !isSparking()) schedule(ticker, hopping ? HOP_TICK_MS : IDLE_TICK_MS);
+    }
+
     public void setHopping(boolean isHopping) {
-        if (sparking) return;
         if (this.hopping == isHopping) return;
         this.hopping = isHopping;
-        removeCallbacks(ticker);
+        if (isSparking()) return;   // the spark ends in the right pose for the new state
+        stopTicking();
         if (isHopping) {
             currentFrame = 2; // leap forward
             invalidate();
-            postDelayed(ticker, HOP_TICK_MS);
+            schedule(ticker, HOP_TICK_MS);
         } else {
             currentFrame = 3; // quick land touchdown
             invalidate();
-            postDelayed(() -> {
-                if (!hopping && !sparking) {
-                    currentFrame = 0;
-                    invalidate();
-                    postDelayed(ticker, IDLE_TICK_MS);
-                }
-            }, 100);
+            schedule(land, 100);
         }
     }
 
-    public void spark(Runnable onDone) {
-        sparking = true;
+    /** The view's translationY without the select hop: what the focus springs read and write. */
+    public float getRestY() {
+        return getTranslationY() + lift;
+    }
+
+    public void setRestY(float y) {
+        setTranslationY(y - lift);
+    }
+
+    private void setLift(float value) {
+        setTranslationY(getTranslationY() + lift - value);
+        lift = value;
+    }
+
+    /** Select celebration. {@code hop} false (animations off) only swaps the sprite frame. */
+    public void spark(boolean hop) {
+        cancelSpark();
+        stopTicking();
         currentFrame = 4; // celebration jump with cheek sparks
         invalidate();
-        animate().translationYBy(-10f * getResources().getDisplayMetrics().density)
-                .setDuration(120)
-                .withEndAction(() -> {
-                    animate().translationYBy(10f * getResources().getDisplayMetrics().density)
-                            .setDuration(120)
-                            .withEndAction(() -> {
-                                sparking = false;
-                                currentFrame = 0;
-                                invalidate();
-                                if (onDone != null) onDone.run();
-                                postDelayed(ticker, IDLE_TICK_MS);
-                            }).start();
-                }).start();
+        float peak = hop ? 10f * getResources().getDisplayMetrics().density : 0f;
+        ValueAnimator a = ValueAnimator.ofFloat(0f, peak, 0f);
+        a.setDuration(SPARK_MS);
+        a.addUpdateListener(v -> setLift((Float) v.getAnimatedValue()));
+        // Also runs on cancel, so a hidden or restarted companion never keeps its lift or the spark frame.
+        a.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (sparkAnimator != animation) return;
+                sparkAnimator = null;
+                setLift(0f);
+                currentFrame = hopping ? 2 : 0;
+                invalidate();
+                restartTicking();
+            }
+        });
+        sparkAnimator = a;
+        a.start();
+    }
+
+    /** Ends a running spark at once, putting the view back on its rest position. */
+    public void cancelSpark() {
+        if (sparkAnimator != null) sparkAnimator.cancel();
     }
 
     @Override
@@ -115,25 +174,27 @@ public class CompanionView extends View {
         super.onAttachedToWindow();
         attached = true;
         ensureBitmap();
-        postDelayed(ticker, IDLE_TICK_MS);
+        restartTicking();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         attached = false;
-        removeCallbacks(ticker);
+        cancelSpark();
+        stopTicking();
         super.onDetachedFromWindow();
     }
 
     @Override
     protected void onVisibilityChanged(View changedView, int visibility) {
         super.onVisibilityChanged(changedView, visibility);
-        if (visibility == VISIBLE && attached) {
-            removeCallbacks(ticker);
-            postDelayed(ticker, IDLE_TICK_MS);
-        } else {
-            removeCallbacks(ticker);
-        }
+        restartTicking();
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        restartTicking();
     }
 
     @Override

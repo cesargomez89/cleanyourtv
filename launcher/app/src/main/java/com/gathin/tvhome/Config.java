@@ -105,9 +105,12 @@ final class Config {
     /** Cinematic top shelf (config.xml, cinematic_home): the focused dock app's artwork behind a larger shelf. */
     final boolean cinematicHome;
     /** Market ticker board: category kicker, headline rates, and individual stock tickers. */
+    final String marketCurrency;
     final String marketKicker;
     final String marketHeadline;
     final String marketTickers;
+    final String marketTickers1;
+    final String marketTickers2;
 
     private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
                    String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -119,7 +122,8 @@ final class Config {
                    int wallpaperRotationMinutes, int wallpaperDim, boolean overlayApplied,
                    Festival festival, int[] inputKeycodes, List<String> appKeys,
                    List<RaceWeekend.Race> raceCalendar, boolean cinematicHome,
-                   String marketKicker, String marketHeadline, String marketTickers) {
+                   String marketCurrency, String marketKicker, String marketHeadline,
+                   String marketTickers, String marketTickers1, String marketTickers2) {
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.dockApps = Collections.unmodifiableList(dockApps);
@@ -161,9 +165,12 @@ final class Config {
         this.festival = festival;
         this.raceCalendar = Collections.unmodifiableList(raceCalendar);
         this.cinematicHome = cinematicHome;
+        this.marketCurrency = marketCurrency;
         this.marketKicker = marketKicker;
         this.marketHeadline = marketHeadline;
         this.marketTickers = marketTickers;
+        this.marketTickers1 = marketTickers1;
+        this.marketTickers2 = marketTickers2;
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -292,9 +299,12 @@ final class Config {
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
 
+        String marketCurrency = json == null ? "" : string(json, "market_currency", "");
         String marketKicker = json == null ? "" : string(json, "market_kicker", "");
         String marketHeadline = json == null ? "" : string(json, "market_headline", "");
         String marketTickers = json == null ? "" : string(json, "market_tickers", "");
+        String marketTickers1 = json == null ? "" : string(json, "market_tickers_1", "");
+        String marketTickers2 = json == null ? "" : string(json, "market_tickers_2", "");
 
         return new Config(dock, fillDock, hidden, liveTv, liveTvAction, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
@@ -304,7 +314,7 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, applied,
                 festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
-                marketKicker, marketHeadline, marketTickers);
+                marketCurrency, marketKicker, marketHeadline, marketTickers, marketTickers1, marketTickers2);
     }
 
     /**

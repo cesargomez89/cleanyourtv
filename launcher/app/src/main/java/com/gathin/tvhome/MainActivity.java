@@ -137,8 +137,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
     private View marketPanel;
-    private TextView marketKicker, marketHeadline, marketTickers;
-    private String marketKickerText, marketHeadlineText, marketTickersText;
+    private TextView marketKicker, marketHeadline, marketTickers1, marketTickers2;
+    private String marketCurrencyText, marketKickerText, marketHeadlineText, marketTickers1Text, marketTickers2Text;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -331,10 +331,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         marketPanel = findViewById(R.id.marketPanel);
         marketKicker = findViewById(R.id.marketKicker);
         marketHeadline = findViewById(R.id.marketHeadline);
-        marketTickers = findViewById(R.id.marketTickers);
+        marketTickers1 = findViewById(R.id.marketTickers1);
+        marketTickers2 = findViewById(R.id.marketTickers2);
+        marketCurrencyText = cfg.marketCurrency;
         marketKickerText = cfg.marketKicker;
         marketHeadlineText = cfg.marketHeadline;
-        marketTickersText = cfg.marketTickers;
+        marketTickers1Text = !cfg.marketTickers1.isEmpty() ? cfg.marketTickers1 : cfg.marketTickers;
+        marketTickers2Text = cfg.marketTickers2;
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -1783,6 +1786,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- top bar ---------------------------------------------------------------------------------
 
     private void updateGreeting() {
+        if (marketCurrencyText != null && !marketCurrencyText.isEmpty()) {
+            greeting.setText(marketCurrencyText);
+            greeting.setTextColor(greetingColor);
+            if (shamsi) shamsiDate.setText(Shamsi.today());
+            return;
+        }
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         int res;
         if (hour < 5) res = R.string.good_night;
@@ -1872,7 +1881,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 marketKicker.setText(marketKickerText.isEmpty() ? "MARKETS" : marketKickerText);
             }
             if (marketHeadline != null) marketHeadline.setText(marketHeadlineText);
-            if (marketTickers != null) marketTickers.setText(marketTickersText);
+            if (marketTickers1 != null) {
+                if (marketTickers1Text != null && !marketTickers1Text.isEmpty()) {
+                    marketTickers1.setText(marketTickers1Text);
+                    marketTickers1.setVisibility(View.VISIBLE);
+                } else {
+                    marketTickers1.setVisibility(View.GONE);
+                }
+            }
+            if (marketTickers2 != null) {
+                if (marketTickers2Text != null && !marketTickers2Text.isEmpty()) {
+                    marketTickers2.setText(marketTickers2Text);
+                    marketTickers2.setVisibility(View.VISIBLE);
+                } else {
+                    marketTickers2.setVisibility(View.GONE);
+                }
+            }
             marketPanel.setVisibility(View.VISIBLE);
         } else {
             marketPanel.setVisibility(View.GONE);

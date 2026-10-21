@@ -229,8 +229,19 @@ person with your model skips that step: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Everything the assistant does, you can run yourself. The tools need Python 3 and nothing else.
 
+If you use [devenv](https://devenv.sh), run `devenv shell` to provision Python, Java 17, and Android tools automatically. Otherwise, create the virtual environment manually:
+
 ```bash
+# With devenv:
+devenv shell
+
+# Or manually:
 python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt
+```
+
+Set your TV's IP address and run:
+
+```bash
 export TV_HOST=192.168.1.50                                   # your TV's IP address
 
 tools/venv/bin/python -I tools/tv.py --probe                 # model, Android version, firmware

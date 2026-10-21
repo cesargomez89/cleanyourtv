@@ -13,12 +13,23 @@ import sys
 import urllib.request
 
 
-DEFAULT_SYMBOLS = [
-    ("USDMXN=X", "USD/MXN", "$"),
-    ("^GSPC", "S&P 500", ""),
-    ("NVDA", "NVDA", "$"),
-    ("AAPL", "AAPL", "$"),
+CURRENCY_SYMBOL = ("USDMXN=X", "USD/MXN", "$")
+
+HEADLINE_SYMBOLS = [
+    ("SPY", "SPY", "$"),
+    ("^VIX", "VIX", ""),
+]
+
+ROW1_SYMBOLS = [
+    ("MSFT", "MSFT", "$"),
+    ("META", "META", "$"),
+    ("INTC", "INTC", "$"),
+]
+
+ROW2_SYMBOLS = [
     ("TSLA", "TSLA", "$"),
+    ("NVDA", "NVDA", "$"),
+    ("SPCX", "SPCX", "$"),
 ]
 
 
@@ -49,6 +60,15 @@ def format_quote(name, prefix, price, change):
     return f"{name} {prefix}{price_str} ({sign}{change:.2f}%)"
 
 
+def fetch_and_format_list(symbol_list, separator="     "):
+    parts = []
+    for sym, name, pfx in symbol_list:
+        price, chg = fetch_quote(sym)
+        if price is not None:
+            parts.append(format_quote(name, pfx, price, chg))
+    return separator.join(parts)
+
+
 def update_theme(theme_dir, push=False):
     config_path = os.path.join(theme_dir, "config.json")
     if not os.path.exists(config_path):
@@ -57,41 +77,34 @@ def update_theme(theme_dir, push=False):
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    quotes = []
-    for sym, name, pfx in DEFAULT_SYMBOLS:
-        price, chg = fetch_quote(sym)
-        if price is not None:
-            quotes.append((name, pfx, price, chg))
+    # 1. Currency (replaces greeting above the clock)
+    curr_sym, curr_name, curr_pfx = CURRENCY_SYMBOL
+    curr_price, curr_chg = fetch_quote(curr_sym)
+    currency_str = format_quote(curr_name, curr_pfx, curr_price, curr_chg) if curr_price is not None else ""
 
-    if not quotes:
-        sys.exit("Error: Could not retrieve any quotes.")
+    # 2. Market headline (SPY and VIX)
+    headline_str = fetch_and_format_list(HEADLINE_SYMBOLS, separator="   ·   ")
 
-    # Format Headline: USD/MXN and S&P 500
-    usd_q = next((q for q in quotes if q[0] == "USD/MXN"), None)
-    sp_q = next((q for q in quotes if q[0] == "S&P 500"), None)
+    # 3. Two rows of equities
+    row1_str = fetch_and_format_list(ROW1_SYMBOLS, separator="     ")
+    row2_str = fetch_and_format_list(ROW2_SYMBOLS, separator="     ")
 
-    headline_parts = []
-    if usd_q:
-        headline_parts.append(format_quote(usd_q[0], usd_q[1], usd_q[2], usd_q[3]))
-    if sp_q:
-        headline_parts.append(format_quote(sp_q[0], sp_q[1], sp_q[2], sp_q[3]))
-    headline = "  ·  ".join(headline_parts)
-
-    # Format Tickers: popular equities
-    stock_parts = [format_quote(q[0], q[1], q[2], q[3]) for q in quotes if q[0] not in ("USD/MXN", "S&P 500")]
-    stock_line = "     ".join(stock_parts)
-
+    config["market_currency"] = currency_str
     config["market_kicker"] = "MARKETS"
-    config["market_headline"] = headline
-    config["market_tickers"] = stock_line
+    config["market_headline"] = headline_str
+    config["market_tickers_1"] = row1_str
+    config["market_tickers_2"] = row2_str
+    config["market_tickers"] = f"{row1_str}\n{row2_str}" if row2_str else row1_str
 
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
     print(f"Updated {config_path}:")
-    print(f"  Headline: {headline}")
-    print(f"  Tickers:  {stock_line}")
+    print(f"  Currency:  {currency_str}")
+    print(f"  Headline:  {headline_str}")
+    print(f"  Row 1:     {row1_str}")
+    print(f"  Row 2:     {row2_str}")
 
     if push:
         repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

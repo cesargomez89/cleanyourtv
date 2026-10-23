@@ -1,0 +1,147 @@
+package com.gathin.tvhome;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+final class SportsTicker {
+    private static final String DEFAULT_API_KEY = "123";
+    private static final List<String> DEFAULT_SPORTS = Arrays.asList("Soccer", "Fighting");
+
+    private SportsTicker() {
+    }
+
+    static String[] fetch(String apiKey, List<String> sports) {
+        String key = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey.trim() : DEFAULT_API_KEY;
+        List<String> sportsToFetch = (sports != null && !sports.isEmpty()) ? sports : DEFAULT_SPORTS;
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+
+        List<String> allEvents = new ArrayList<>();
+        for (String sport : sportsToFetch) {
+            String json = fetchDayJson(sport, today, key);
+            if (json != null) {
+                allEvents.addAll(parseEvents(json));
+            }
+        }
+        return assemble(allEvents, "     ");
+    }
+
+    private static String fetchDayJson(String sport, String dateStr, String apiKey) {
+        HttpURLConnection conn = null;
+        try {
+            String encodedSport = URLEncoder.encode(sport, "UTF-8");
+            URL url = new URL("https://www.thesportsdb.com/api/v1/json/" + apiKey + "/eventsday.php?d=" + dateStr + "&s=" + encodedSport);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 CleanYourTV/1.0");
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            if (conn.getResponseCode() != 200) return null;
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            reader.close();
+            return sb.toString();
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    static List<String> parseEvents(String jsonStr) {
+        List<String> list = new ArrayList<>();
+        if (jsonStr == null || jsonStr.isEmpty()) return list;
+        try {
+            JSONObject root = new JSONObject(jsonStr);
+            JSONArray events = root.optJSONArray("events");
+            if (events == null) return list;
+            for (int i = 0; i < events.length(); i++) {
+                JSONObject ev = events.optJSONObject(i);
+                if (ev != null) {
+                    String formatted = formatEvent(ev);
+                    if (formatted != null && !formatted.isEmpty()) {
+                        list.add(formatted);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return list;
+    }
+
+    static String formatEvent(JSONObject ev) {
+        String home = ev.optString("strHomeTeam", "").trim();
+        String away = ev.optString("strAwayTeam", "").trim();
+        String eventName = ev.optString("strEvent", "").trim();
+        String homeScore = ev.isNull("intHomeScore") ? null : ev.optString("intHomeScore", "").trim();
+        String awayScore = ev.isNull("intAwayScore") ? null : ev.optString("intAwayScore", "").trim();
+        String status = ev.optString("strStatus", "").trim();
+        String timeStr = ev.optString("strTime", "").trim();
+        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr);
+    }
+
+    static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore, String status, String timeStr) {
+        if (timeStr != null && timeStr.length() >= 5 && timeStr.charAt(2) == ':') {
+            timeStr = timeStr.substring(0, 5);
+            if ("00:00".equals(timeStr)) {
+                timeStr = "";
+            }
+        }
+
+        if (home != null && away != null && !home.isEmpty() && !away.isEmpty()) {
+            if (homeScore != null && awayScore != null && !homeScore.isEmpty() && !awayScore.isEmpty()) {
+                String suffix = (status != null && !status.isEmpty()) ? " (" + status + ")" : "";
+                return home + " " + homeScore + "-" + awayScore + " " + away + suffix;
+            }
+            if (timeStr != null && !timeStr.isEmpty()) {
+                return home + " vs " + away + " (" + timeStr + ")";
+            }
+            return home + " vs " + away;
+        }
+
+        if (eventName != null && !eventName.isEmpty()) {
+            if (status != null && !status.isEmpty()) {
+                return eventName + " (" + status + ")";
+            }
+            if (timeStr != null && !timeStr.isEmpty()) {
+                return eventName + " (" + timeStr + ")";
+            }
+            return eventName;
+        }
+
+        return null;
+    }
+
+    static String[] assemble(List<String> events, String sep) {
+        if (events == null || events.isEmpty()) return null;
+        String headline = events.get(0);
+        String row1 = joinRange(events, 1, 4, sep);
+        String row2 = joinRange(events, 4, 7, sep);
+        return new String[]{headline, row1, row2};
+    }
+
+    private static String joinRange(List<String> list, int start, int end, String sep) {
+        if (start >= list.size()) return "";
+        int bound = Math.min(end, list.size());
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < bound; i++) {
+            if (sb.length() > 0) sb.append(sep);
+            sb.append(list.get(i));
+        }
+        return sb.toString();
+    }
+}

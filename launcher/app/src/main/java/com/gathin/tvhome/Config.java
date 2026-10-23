@@ -189,7 +189,7 @@ final class Config {
         this.sportsApiKey = sportsApiKey;
         this.sportsList = Collections.unmodifiableList(sportsList != null ? sportsList : Collections.emptyList());
         this.sportsLeagues = Collections.unmodifiableList(sportsLeagues != null && !sportsLeagues.isEmpty()
-                ? sportsLeagues : Arrays.asList("4328", "4480", "4443", "4445"));
+                ? sportsLeagues : Arrays.asList("4328", "4335", "4350", "4443", "4445", "4480"));
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */

@@ -10,6 +10,10 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -18,14 +22,30 @@ import java.util.Locale;
 
 final class SportsTicker {
     private static final String DEFAULT_API_KEY = "123";
-    private static final List<String> DEFAULT_LEAGUES = Arrays.asList("4328", "4480", "4443", "4445");
+    private static final List<String> DEFAULT_LEAGUES = Arrays.asList("4328", "4335", "4350", "4443", "4445", "4480");
     private static final String[] MONTH_NAMES = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     private SportsTicker() {
     }
 
     static String getTodayIso() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        return java.time.LocalDate.now(ZoneId.systemDefault()).toString();
+    }
+
+    /** TheSportsDB reports dateEvent and strTime in UTC; returns {date, time} in zone, unchanged when the time is unknown. */
+    static String[] localizeKickoff(String dateStr, String timeStr, ZoneId zone) {
+        String[] unchanged = {dateStr, timeStr};
+        if (dateStr == null || dateStr.isEmpty() || timeStr == null || timeStr.length() < 5
+                || timeStr.charAt(2) != ':' || "00:00".equals(timeStr.substring(0, 5))) {
+            return unchanged;
+        }
+        try {
+            ZonedDateTime local = LocalDateTime.parse(dateStr + "T" + timeStr.substring(0, 5))
+                    .atZone(ZoneOffset.UTC).withZoneSameInstant(zone);
+            return new String[]{local.toLocalDate().toString(), local.toLocalTime().toString()};
+        } catch (Exception ignored) {
+            return unchanged;
+        }
     }
 
     static String formatDateLabel(String dateStr, String todayStr) {
@@ -151,7 +171,8 @@ final class SportsTicker {
         if ("null".equalsIgnoreCase(status)) status = "";
         if ("null".equalsIgnoreCase(timeStr)) timeStr = "";
         if ("null".equalsIgnoreCase(dateStr)) dateStr = "";
-        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr, dateStr, getTodayIso());
+        ZoneId zone = ZoneId.systemDefault();
+        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr, dateStr, getTodayIso(), zone);
     }
 
     static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore, String status, String timeStr) {
@@ -160,6 +181,14 @@ final class SportsTicker {
 
     static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore,
                                String status, String timeStr, String dateStr, String todayStr) {
+        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr, dateStr, todayStr, ZoneOffset.UTC);
+    }
+
+    static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore,
+                               String status, String timeStr, String dateStr, String todayStr, ZoneId zone) {
+        String[] local = localizeKickoff(dateStr, timeStr, zone);
+        dateStr = local[0];
+        timeStr = local[1];
         if (!isEventRecent(dateStr, todayStr, 1)) {
             return null;
         }

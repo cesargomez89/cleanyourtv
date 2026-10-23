@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import org.junit.Test;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +17,18 @@ public class SportsTickerTest {
     public void testFormatFinishedSoccerEvent() {
         String formatted = SportsTicker.formatMatch("Arsenal", "Chelsea", "Arsenal vs Chelsea", "2", "0", "FT", "15:00:00");
         assertEquals("Arsenal 2-0 Chelsea (FT)", formatted);
+    }
+
+    @Test
+    public void testFormatLigaMxFinishedEvent() {
+        String formatted = SportsTicker.formatMatch("Pachuca", "Cruz Azul", null, "1", "2", "FT", "21:00:00", "2026-10-22", "2026-10-23");
+        assertEquals("Pachuca 1-2 Cruz Azul (FT, Oct 22)", formatted);
+    }
+
+    @Test
+    public void testFormatLaLigaUpcomingEvent() {
+        String formatted = SportsTicker.formatMatch("Deportivo Alavés", "Málaga", null, null, null, "NS", "19:00:00", "2026-10-23", "2026-10-23");
+        assertEquals("Deportivo Alavés vs Málaga (Today 19:00)", formatted);
     }
 
     @Test
@@ -81,6 +94,41 @@ public class SportsTickerTest {
     public void testFormatCombatFinishedEventWithYesterdayDate() {
         String formatted = SportsTicker.formatMatch(null, null, "UFC Fight Night 291", null, null, "FT", "21:00:00", "2026-10-21", "2026-10-22");
         assertEquals("UFC Fight Night 291 (FT, Oct 21)", formatted);
+    }
+
+    @Test
+    public void testKickoffConvertedFromUtcToTvZone() {
+        ZoneId mexicoCity = ZoneId.of("America/Mexico_City");
+        String formatted = SportsTicker.formatMatch("Arsenal", "Chelsea", null, null, null, "NS", "23:30:00", "2026-10-23", "2026-10-23", mexicoCity);
+        assertEquals("Arsenal vs Chelsea (Today 17:30)", formatted);
+    }
+
+    @Test
+    public void testKickoffDateRollsBackAcrossMidnight() {
+        ZoneId losAngeles = ZoneId.of("America/Los_Angeles");
+        String formatted = SportsTicker.formatMatch("Arsenal", "Chelsea", null, null, null, "NS", "02:00:00", "2026-10-24", "2026-10-23", losAngeles);
+        assertEquals("Arsenal vs Chelsea (Today 19:00)", formatted);
+    }
+
+    @Test
+    public void testKickoffDateRollsForwardAcrossMidnight() {
+        ZoneId tokyo = ZoneId.of("Asia/Tokyo");
+        String formatted = SportsTicker.formatMatch("Arsenal", "Chelsea", null, null, null, "NS", "20:00:00", "2026-10-23", "2026-10-23", tokyo);
+        assertEquals("Arsenal vs Chelsea (Oct 24, 05:00)", formatted);
+    }
+
+    @Test
+    public void testFinishedLabelUsesTvZoneDate() {
+        ZoneId losAngeles = ZoneId.of("America/Los_Angeles");
+        String formatted = SportsTicker.formatMatch("Pachuca", "Cruz Azul", null, "1", "2", "FT", "01:00:00", "2026-10-23", "2026-10-23", losAngeles);
+        assertEquals("Pachuca 1-2 Cruz Azul (FT, Oct 22)", formatted);
+    }
+
+    @Test
+    public void testUnknownKickoffTimeKeepsDate() {
+        ZoneId losAngeles = ZoneId.of("America/Los_Angeles");
+        String formatted = SportsTicker.formatMatch(null, null, "Dalton Smith vs Alberto Puello", null, null, null, "00:00:00", "2026-10-24", "2026-10-23", losAngeles);
+        assertEquals("Dalton Smith vs Alberto Puello (Oct 24)", formatted);
     }
 
     @Test

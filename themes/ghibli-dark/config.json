@@ -22,7 +22,15 @@
   "market_tickers_1": "MSFT $531.87 (-0.31%)     META $694.25 (-1.59%)     INTC $91.69 (-0.37%)",
   "market_tickers_2": "TSLA $373.71 (+1.54%)     NVDA $216.47 (-0.29%)     SPCX $147.79 (-0.11%)",
   "sports_kicker": "SPORTS",
-  "sports_headline": "Ipswich Town vs Nottingham Forest (Oct 23, 19:00)",
-  "sports_tickers_1": "Club Brugge 3-0 Lens (FT, Oct 21)     Shakhtar Donetsk vs Sporting CP (Nov 3, 17:45)     UFC 333 Volkanovski vs Evloev (Oct 24, 16:00)",
-  "sports_tickers_2": "Dalton Smith vs Alberto Puello (Oct 24)"
+  "sports_leagues": [
+    "4328",
+    "4335",
+    "4350",
+    "4443",
+    "4445",
+    "4480"
+  ],
+  "sports_headline": "Ipswich Town vs Nottingham Forest (Today 19:00)",
+  "sports_tickers_1": "Deportivo Alavés vs Málaga (Today 19:00)     Pachuca 1-2 Cruz Azul (FT, Oct 22)     Necaxa vs Juárez (Oct 24, 01:00)",
+  "sports_tickers_2": "UFC 333 Volkanovski vs Evloev (Oct 24, 16:00)     Dalton Smith vs Alberto Puello (Oct 24)"
 }

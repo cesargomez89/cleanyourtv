@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Fetch daily sports scores and upcoming fixtures and inject them into a CleanYourTV theme.
+
+Usage:
+    python3 tools/sports_ticker.py themes/ghibli-dark
+    python3 tools/sports_ticker.py themes/ghibli-dark --push
+    python3 tools/sports_ticker.py themes/ghibli-dark --sports "Soccer,Fighting"
+"""
+import argparse
+from datetime import date
+import json
+import os
+import subprocess
+import sys
+import urllib.parse
+import urllib.request
+
+
+DEFAULT_API_KEY = "123"
+DEFAULT_SPORTS = ["Soccer", "Fighting"]
+
+
+def fetch_sports_day(sport, query_date=None, api_key=DEFAULT_API_KEY):
+    if query_date is None:
+        query_date = date.today().strftime("%Y-%m-%d")
+    encoded_sport = urllib.parse.quote(sport)
+    url = f"https://www.thesportsdb.com/api/v1/json/{api_key}/eventsday.php?d={query_date}&s={encoded_sport}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 CleanYourTV/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return parse_events(data)
+    except Exception as e:
+        print(f"Warning: failed to fetch sports day for {sport}: {e}", file=sys.stderr)
+        return []
+
+
+def parse_events(data):
+    if not isinstance(data, dict):
+        return []
+    raw = data.get("events")
+    if not isinstance(raw, list):
+        return []
+    valid = []
+    for ev in raw:
+        if not isinstance(ev, dict):
+            continue
+        has_teams = bool(ev.get("strHomeTeam") and ev.get("strAwayTeam"))
+        has_event_name = bool(ev.get("strEvent"))
+        if has_teams or has_event_name:
+            valid.append(ev)
+    return valid
+
+
+def format_event(ev):
+    home = (ev.get("strHomeTeam") or "").strip()
+    away = (ev.get("strAwayTeam") or "").strip()
+    event_name = (ev.get("strEvent") or "").strip()
+    home_score = ev.get("intHomeScore")
+    away_score = ev.get("intAwayScore")
+    status = (ev.get("strStatus") or "").strip()
+    time_str = (ev.get("strTime") or "").strip()
+    if len(time_str) >= 5 and time_str[2] == ":":
+        time_str = time_str[:5]
+        if time_str == "00:00":
+            time_str = ""
+
+    if home and away:
+        if home_score is not None and away_score is not None and home_score != "" and away_score != "":
+            status_suffix = f" ({status})" if status else ""
+            return f"{home} {home_score}-{away_score} {away}{status_suffix}"
+        if time_str:
+            return f"{home} vs {away} ({time_str})"
+        return f"{home} vs {away}"
+
+    if event_name:
+        if status:
+            return f"{event_name} ({status})"
+        if time_str:
+            return f"{event_name} ({time_str})"
+        return event_name
+
+    return ""
+
+
+def assemble_ticker_board(events, separator="     "):
+    if not events:
+        return "", "", ""
+    formatted = [f for f in (format_event(ev) for ev in events) if f]
+    headline = formatted[0] if len(formatted) > 0 else ""
+    row1 = separator.join(formatted[1:4]) if len(formatted) > 1 else ""
+    row2 = separator.join(formatted[4:7]) if len(formatted) > 4 else ""
+    return headline, row1, row2
+
+
+def fetch_all_sports(sports, query_date=None, api_key=DEFAULT_API_KEY):
+    combined = []
+    for sport in sports:
+        events = fetch_sports_day(sport.strip(), query_date=query_date, api_key=api_key)
+        combined.extend(events)
+    return combined
+
+
+def update_theme(theme_dir, api_key=DEFAULT_API_KEY, sports=None, query_date=None, push=False):
+    config_path = os.path.join(theme_dir, "config.json")
+    if not os.path.exists(config_path):
+        sys.exit(f"Error: {config_path} does not exist.")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    if sports is None:
+        configured_sports = config.get("sports_list")
+        if isinstance(configured_sports, list) and configured_sports:
+            sports = configured_sports
+        else:
+            sports = DEFAULT_SPORTS
+
+    all_events = fetch_all_sports(sports, query_date=query_date, api_key=api_key)
+    headline, row1, row2 = assemble_ticker_board(all_events)
+
+    config["sports_kicker"] = config.get("sports_kicker") or "TODAY'S GAMES"
+    config["sports_headline"] = headline
+    config["sports_tickers_1"] = row1
+    config["sports_tickers_2"] = row2
+
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    print(f"Updated {config_path}:")
+    print(f"  Kicker:    {config['sports_kicker']}")
+    print(f"  Headline:  {headline}")
+    print(f"  Row 1:     {row1}")
+    print(f"  Row 2:     {row2}")
+
+    if push:
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        theme_sh = os.path.join(repo_root, "tools", "theme.sh")
+        print(f"Pushing {theme_dir} to TV...")
+        subprocess.run(["bash", theme_sh, theme_dir], check=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch sports events and update CleanYourTV theme.")
+    parser.add_argument("theme", help="Path to theme directory (e.g. themes/ghibli-dark)")
+    parser.add_argument("--api-key", default=os.environ.get("THESPORTSDB_API_KEY", DEFAULT_API_KEY),
+                        help="TheSportsDB API key (default: 123)")
+    parser.add_argument("--sports", default=None,
+                        help="Comma-separated list of sports (e.g. 'Soccer,Fighting')")
+    parser.add_argument("--date", default=None, help="Query date in YYYY-MM-DD format (default: today)")
+    parser.add_argument("--push", action="store_true", help="Push theme to TV after updating")
+    args = parser.parse_args()
+
+    sports_list = [s.strip() for s in args.sports.split(",") if s.strip()] if args.sports else None
+    update_theme(args.theme, api_key=args.api_key, sports=sports_list, query_date=args.date, push=args.push)
+
+
+if __name__ == "__main__":
+    main()

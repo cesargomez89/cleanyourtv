@@ -48,6 +48,34 @@ final class SportsTicker {
         return dateStr;
     }
 
+    static boolean isEventRecent(String dateStr, String todayStr, int maxPastDays) {
+        if (dateStr == null || dateStr.trim().isEmpty() || "null".equalsIgnoreCase(dateStr.trim())) {
+            return true;
+        }
+        try {
+            java.time.LocalDate evDate = java.time.LocalDate.parse(dateStr.trim());
+            java.time.LocalDate today = (todayStr != null && !todayStr.trim().isEmpty())
+                    ? java.time.LocalDate.parse(todayStr.trim())
+                    : java.time.LocalDate.now();
+            long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(today, evDate);
+            return daysBetween >= -maxPastDays;
+        } catch (Throwable ignored) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                Date ev = sdf.parse(dateStr.trim());
+                Date t = (todayStr != null && !todayStr.trim().isEmpty()) ? sdf.parse(todayStr.trim()) : new Date();
+                if (ev != null && t != null) {
+                    long diffMs = ev.getTime() - t.getTime();
+                    long diffDays = diffMs / (1000L * 60 * 60 * 24);
+                    return diffDays >= -maxPastDays;
+                }
+            } catch (Exception e) {
+                return true;
+            }
+            return true;
+        }
+    }
+
     static String[] fetch(String apiKey, List<String> leagues) {
         String key = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey.trim() : DEFAULT_API_KEY;
         List<String> leaguesToFetch = (leagues != null && !leagues.isEmpty()) ? leagues : DEFAULT_LEAGUES;
@@ -132,6 +160,9 @@ final class SportsTicker {
 
     static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore,
                                String status, String timeStr, String dateStr, String todayStr) {
+        if (!isEventRecent(dateStr, todayStr, 1)) {
+            return null;
+        }
         if (home != null && "null".equalsIgnoreCase(home.trim())) home = "";
         if (away != null && "null".equalsIgnoreCase(away.trim())) away = "";
         if (eventName != null && "null".equalsIgnoreCase(eventName.trim())) eventName = "";

@@ -43,9 +43,26 @@ public class SportsTickerTest {
     }
 
     @Test
-    public void testFormatFinishedSoccerEventWithDate() {
+    public void testFormatFinishedSoccerEventWithYesterdayDate() {
+        String formatted = SportsTicker.formatMatch("Club Brugge", "Lens", null, "3", "0", "FT", "19:00:00", "2026-10-21", "2026-10-22");
+        assertEquals("Club Brugge 3-0 Lens (FT, Oct 21)", formatted);
+    }
+
+    @Test
+    public void testFormatDropsEventsOlderThanOneDay() {
         String formatted = SportsTicker.formatMatch("Tottenham Hotspur", "Coventry City", null, "3", "1", "FT", "19:00:00", "2026-10-19", "2026-10-22");
-        assertEquals("Tottenham Hotspur 3-1 Coventry City (FT, Oct 19)", formatted);
+        assertNull(formatted);
+    }
+
+    @Test
+    public void testIsEventRecent() {
+        org.junit.Assert.assertTrue(SportsTicker.isEventRecent("2026-10-22", "2026-10-22", 1));
+        org.junit.Assert.assertTrue(SportsTicker.isEventRecent("2026-10-21", "2026-10-22", 1));
+        org.junit.Assert.assertFalse(SportsTicker.isEventRecent("2026-10-20", "2026-10-22", 1));
+        org.junit.Assert.assertFalse(SportsTicker.isEventRecent("2026-10-19", "2026-10-22", 1));
+        org.junit.Assert.assertTrue(SportsTicker.isEventRecent("2026-10-23", "2026-10-22", 1));
+        org.junit.Assert.assertTrue(SportsTicker.isEventRecent("", "2026-10-22", 1));
+        org.junit.Assert.assertTrue(SportsTicker.isEventRecent(null, "2026-10-22", 1));
     }
 
     @Test
@@ -61,9 +78,9 @@ public class SportsTickerTest {
     }
 
     @Test
-    public void testFormatCombatFinishedEventWithDate() {
-        String formatted = SportsTicker.formatMatch(null, null, "UFC Fight Night 291", null, null, "FT", "21:00:00", "2026-10-17", "2026-10-22");
-        assertEquals("UFC Fight Night 291 (FT, Oct 17)", formatted);
+    public void testFormatCombatFinishedEventWithYesterdayDate() {
+        String formatted = SportsTicker.formatMatch(null, null, "UFC Fight Night 291", null, null, "FT", "21:00:00", "2026-10-21", "2026-10-22");
+        assertEquals("UFC Fight Night 291 (FT, Oct 21)", formatted);
     }
 
     @Test

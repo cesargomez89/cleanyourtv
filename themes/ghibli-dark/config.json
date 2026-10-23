@@ -22,7 +22,7 @@
   "market_tickers_1": "MSFT $531.87 (-0.31%)     META $694.25 (-1.59%)     INTC $91.69 (-0.37%)",
   "market_tickers_2": "TSLA $373.71 (+1.54%)     NVDA $216.47 (-0.29%)     SPCX $147.79 (-0.11%)",
   "sports_kicker": "SPORTS",
-  "sports_headline": "Tottenham Hotspur 3-1 Coventry City (FT, Oct 19)",
-  "sports_tickers_1": "Ipswich Town vs Nottingham Forest (Oct 23, 19:00)     Club Brugge 3-0 Lens (FT, Oct 21)     Shakhtar Donetsk vs Sporting CP (Nov 3, 17:45)",
-  "sports_tickers_2": "UFC Fight Night 291 Buckley vs Malott (FT, Oct 17)     UFC 333 Volkanovski vs Evloev (Oct 24, 16:00)     Sebastian Fundora vs Ermal Hadribeaj (FT, Oct 18)"
+  "sports_headline": "Ipswich Town vs Nottingham Forest (Oct 23, 19:00)",
+  "sports_tickers_1": "Club Brugge 3-0 Lens (FT, Oct 21)     Shakhtar Donetsk vs Sporting CP (Nov 3, 17:45)     UFC 333 Volkanovski vs Evloev (Oct 24, 16:00)",
+  "sports_tickers_2": "Dalton Smith vs Alberto Puello (Oct 24)"
 }

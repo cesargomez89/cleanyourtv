@@ -7,6 +7,7 @@ from unittest.mock import patch
 from tools.sports_ticker import (
     assemble_ticker_board,
     format_event,
+    is_event_recent,
     parse_events,
     update_theme,
 )
@@ -99,7 +100,19 @@ class SportsTickerTest(unittest.TestCase):
         formatted = format_event(event, today_str="2026-10-22")
         self.assertEqual(formatted, "Ipswich Town vs Nottingham Forest (Oct 23, 19:00)")
 
-    def test_format_finished_with_past_date(self):
+    def test_format_finished_with_yesterday_date(self):
+        event = {
+            "strHomeTeam": "Club Brugge",
+            "strAwayTeam": "Lens",
+            "intHomeScore": "3",
+            "intAwayScore": "0",
+            "strStatus": "FT",
+            "dateEvent": "2026-10-21",
+        }
+        formatted = format_event(event, today_str="2026-10-22")
+        self.assertEqual(formatted, "Club Brugge 3-0 Lens (FT, Oct 21)")
+
+    def test_format_drops_events_older_than_one_day(self):
         event = {
             "strHomeTeam": "Tottenham Hotspur",
             "strAwayTeam": "Coventry City",
@@ -109,7 +122,8 @@ class SportsTickerTest(unittest.TestCase):
             "dateEvent": "2026-10-19",
         }
         formatted = format_event(event, today_str="2026-10-22")
-        self.assertEqual(formatted, "Tottenham Hotspur 3-1 Coventry City (FT, Oct 19)")
+        self.assertEqual(formatted, "")
+        self.assertFalse(is_event_recent(event, today="2026-10-22", max_past_days=1))
 
     def test_format_upcoming_today(self):
         event = {

@@ -41,6 +41,28 @@ def format_date_label(date_str, today_str=None):
     return date_str
 
 
+def is_event_recent(ev, today=None, max_past_days=1):
+    if today is None:
+        today = date.today()
+    elif isinstance(today, str):
+        try:
+            today = date.fromisoformat(today.strip())
+        except ValueError:
+            today = date.today()
+    date_str = (ev.get("dateEvent") or ev.get("strDate") or "").strip()
+    if not date_str or date_str.lower() == "null":
+        return True
+    try:
+        parts = date_str.split("-")
+        if len(parts) == 3:
+            ev_date = date(int(parts[0]), int(parts[1]), int(parts[2]))
+            if (ev_date - today).days < -max_past_days:
+                return False
+    except (ValueError, IndexError):
+        pass
+    return True
+
+
 def fetch_league_events(league_id, api_key=DEFAULT_API_KEY):
     events = []
     for endpoint in ("eventspastleague.php", "eventsnextleague.php"):
@@ -96,7 +118,9 @@ def parse_events(data):
     return valid
 
 
-def format_event(ev, today_str=None):
+def format_event(ev, today_str=None, max_past_days=1):
+    if not is_event_recent(ev, today=today_str, max_past_days=max_past_days):
+        return ""
     if today_str is None:
         today_str = date.today().isoformat()
     home = (ev.get("strHomeTeam") or "").strip()

@@ -56,6 +56,12 @@ def format_event(ev):
     home = (ev.get("strHomeTeam") or "").strip()
     away = (ev.get("strAwayTeam") or "").strip()
     event_name = (ev.get("strEvent") or "").strip()
+    if home.lower() == "null":
+        home = ""
+    if away.lower() == "null":
+        away = ""
+    if event_name.lower() == "null":
+        event_name = ""
     home_score = ev.get("intHomeScore")
     away_score = ev.get("intAwayScore")
     status = (ev.get("strStatus") or "").strip()

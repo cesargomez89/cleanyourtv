@@ -31,6 +31,12 @@ public class SportsTickerTest {
     }
 
     @Test
+    public void testFormatCombatEventWithLiteralNullStringTeams() {
+        String formatted = SportsTicker.formatMatch("null", "null", "Dynamite #368", null, null, null, null);
+        assertEquals("Dynamite #368", formatted);
+    }
+
+    @Test
     public void testAssembleTickerRows() {
         List<String> events = Arrays.asList(
                 "Match 1 (FT)",

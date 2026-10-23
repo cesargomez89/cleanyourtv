@@ -84,17 +84,26 @@ final class SportsTicker {
     }
 
     static String formatEvent(JSONObject ev) {
-        String home = ev.optString("strHomeTeam", "").trim();
-        String away = ev.optString("strAwayTeam", "").trim();
-        String eventName = ev.optString("strEvent", "").trim();
+        String home = ev.isNull("strHomeTeam") ? "" : ev.optString("strHomeTeam", "").trim();
+        String away = ev.isNull("strAwayTeam") ? "" : ev.optString("strAwayTeam", "").trim();
+        String eventName = ev.isNull("strEvent") ? "" : ev.optString("strEvent", "").trim();
         String homeScore = ev.isNull("intHomeScore") ? null : ev.optString("intHomeScore", "").trim();
         String awayScore = ev.isNull("intAwayScore") ? null : ev.optString("intAwayScore", "").trim();
-        String status = ev.optString("strStatus", "").trim();
-        String timeStr = ev.optString("strTime", "").trim();
+        String status = ev.isNull("strStatus") ? "" : ev.optString("strStatus", "").trim();
+        String timeStr = ev.isNull("strTime") ? "" : ev.optString("strTime", "").trim();
+        if ("null".equalsIgnoreCase(home)) home = "";
+        if ("null".equalsIgnoreCase(away)) away = "";
+        if ("null".equalsIgnoreCase(eventName)) eventName = "";
+        if ("null".equalsIgnoreCase(status)) status = "";
+        if ("null".equalsIgnoreCase(timeStr)) timeStr = "";
         return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr);
     }
 
     static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore, String status, String timeStr) {
+        if (home != null && "null".equalsIgnoreCase(home.trim())) home = "";
+        if (away != null && "null".equalsIgnoreCase(away.trim())) away = "";
+        if (eventName != null && "null".equalsIgnoreCase(eventName.trim())) eventName = "";
+
         if (timeStr != null && timeStr.length() >= 5 && timeStr.charAt(2) == ':') {
             timeStr = timeStr.substring(0, 5);
             if ("00:00".equals(timeStr)) {

@@ -53,6 +53,19 @@ devenv shell
 > [!TIP]
 > Run `devenv shell <script>` directly from the host to execute tasks non-interactively.
 
+### Find the TV Address (`TV_HOST`)
+
+1. Read `devenv.local.nix`, a gitignored, machine-specific file at the repository root.
+2. Take the address from `env.TV_HOST`.
+3. Run scripts through `devenv shell <script>` so the variable is exported automatically.
+4. Never ask the user for the IP before reading this file.
+
+```bash
+devenv shell launcher/build-and-install.sh
+```
+
+If the TV does not answer on port 5555, ask the user to power it on and enable Network debugging. Do not scan the LAN.
+
 ### Manual Environment Alternative
 
 1. Create a virtual environment inside `tools/venv`.

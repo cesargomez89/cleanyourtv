@@ -148,6 +148,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View marketPanel;
     private TextView marketKicker, marketHeadline, marketTickers1, marketTickers2;
     private String marketCurrencyText, marketKickerText, marketHeadlineText, marketTickers1Text, marketTickers2Text;
+    private View sportsPanel;
+    private TextView sportsKicker, sportsHeadline, sportsTickers1, sportsTickers2;
+    private String sportsKickerText, sportsHeadlineText, sportsTickers1Text, sportsTickers2Text, sportsApiKey;
+    private List<String> sportsList;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -349,6 +353,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         marketHeadlineText = cfg.marketHeadline;
         marketTickers1Text = !cfg.marketTickers1.isEmpty() ? cfg.marketTickers1 : cfg.marketTickers;
         marketTickers2Text = cfg.marketTickers2;
+        sportsPanel = findViewById(R.id.sportsPanel);
+        sportsKicker = findViewById(R.id.sportsKicker);
+        sportsHeadline = findViewById(R.id.sportsHeadline);
+        sportsTickers1 = findViewById(R.id.sportsTickers1);
+        sportsTickers2 = findViewById(R.id.sportsTickers2);
+        sportsKickerText = cfg.sportsKicker;
+        sportsHeadlineText = cfg.sportsHeadline;
+        sportsTickers1Text = cfg.sportsTickers1;
+        sportsTickers2Text = cfg.sportsTickers2;
+        sportsApiKey = cfg.sportsApiKey;
+        sportsList = cfg.sportsList;
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -673,11 +688,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateGreeting();
         updateRace();
         updateMarket();
+        updateSports();
         updateWifiLabel();
         updateInputsButton();
         if (showStats) startStats();
         handler.removeCallbacks(marketRefreshRunnable);
         handler.post(marketRefreshRunnable);
+        handler.removeCallbacks(sportsRefreshRunnable);
+        handler.post(sportsRefreshRunnable);
         sky.update();
         wallpaperPlayer.start();
         handler.postDelayed(minuteTick, MINUTE_MS);
@@ -784,6 +802,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
         handler.removeCallbacks(marketRefreshRunnable);
+        handler.removeCallbacks(sportsRefreshRunnable);
         stopStats();
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
@@ -1263,6 +1282,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (animations) marketPanel.animate().alpha(1f).setDuration(260).start();
             else marketPanel.setAlpha(1f);
         }
+        if (sportsPanel != null && sportsPanel.getVisibility() == View.VISIBLE && sportsPanel.getAlpha() < 1f) {
+            if (animations) sportsPanel.animate().alpha(1f).setDuration(260).start();
+            else sportsPanel.setAlpha(1f);
+        }
 
         if (!heroShown) {
             stopAmbientAnimation();
@@ -1526,12 +1549,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (marketPanel != null && marketPanel.getVisibility() == View.VISIBLE) {
                 marketPanel.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();
             }
+            if (sportsPanel != null && sportsPanel.getVisibility() == View.VISIBLE) {
+                sportsPanel.animate().alpha(0f).setDuration(reducedMotion ? 100 : 160).start();
+            }
         } else {
             hero.setAlpha(0f);
             ambient.setAlpha(0f);
             heroArt.setAlpha(0f);
             if (marketPanel != null && marketPanel.getVisibility() == View.VISIBLE) {
                 marketPanel.setAlpha(0f);
+            }
+            if (sportsPanel != null && sportsPanel.getVisibility() == View.VISIBLE) {
+                sportsPanel.setAlpha(0f);
             }
         }
     }
@@ -1977,6 +2006,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (s == null) {
             racePanel.setVisibility(View.GONE);
             updateMarket();
+            updateSports();
             return;
         }
         RaceWeekend.Race race = s.race;
@@ -2018,6 +2048,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceSessions.setText(row);
         racePanel.setVisibility(View.VISIBLE);
         if (marketPanel != null) marketPanel.setVisibility(View.GONE);
+        if (sportsPanel != null) sportsPanel.setVisibility(View.GONE);
     }
 
     // ---- market ticker board ------------------------------------------------------------------------
@@ -2085,6 +2116,69 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             marketPanel.setVisibility(View.VISIBLE);
         } else {
             marketPanel.setVisibility(View.GONE);
+        }
+    }
+
+    // ---- sports ticker board ------------------------------------------------------------------------
+
+    private final Runnable sportsRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (sportsHeadlineText == null || sportsHeadlineText.isEmpty()) {
+                return;
+            }
+            new Thread(() -> {
+                String[] result = SportsTicker.fetch(sportsApiKey, sportsList);
+                if (result == null) return;
+                handler.post(() -> applySportsResult(result));
+            }).start();
+            handler.postDelayed(this, 15 * 60 * 1000);
+        }
+    };
+
+    private void applySportsResult(String[] result) {
+        if (result[0] != null && !result[0].isEmpty()) {
+            sportsHeadlineText = result[0];
+        }
+        if (result[1] != null && !result[1].isEmpty()) {
+            sportsTickers1Text = result[1];
+        }
+        if (result[2] != null && !result[2].isEmpty()) {
+            sportsTickers2Text = result[2];
+        }
+        updateSports();
+    }
+
+    private void updateSports() {
+        if (sportsPanel == null) return;
+        if (racePanel != null && racePanel.getVisibility() == View.VISIBLE) {
+            sportsPanel.setVisibility(View.GONE);
+            return;
+        }
+        if (sportsHeadlineText != null && !sportsHeadlineText.isEmpty()) {
+            if (sportsKicker != null) {
+                sportsKicker.setText(sportsKickerText.isEmpty() ? "SPORTS" : sportsKickerText);
+            }
+            if (sportsHeadline != null) sportsHeadline.setText(sportsHeadlineText);
+            if (sportsTickers1 != null) {
+                if (sportsTickers1Text != null && !sportsTickers1Text.isEmpty()) {
+                    sportsTickers1.setText(sportsTickers1Text);
+                    sportsTickers1.setVisibility(View.VISIBLE);
+                } else {
+                    sportsTickers1.setVisibility(View.GONE);
+                }
+            }
+            if (sportsTickers2 != null) {
+                if (sportsTickers2Text != null && !sportsTickers2Text.isEmpty()) {
+                    sportsTickers2.setText(sportsTickers2Text);
+                    sportsTickers2.setVisibility(View.VISIBLE);
+                } else {
+                    sportsTickers2.setVisibility(View.GONE);
+                }
+            }
+            sportsPanel.setVisibility(View.VISIBLE);
+        } else {
+            sportsPanel.setVisibility(View.GONE);
         }
     }
 

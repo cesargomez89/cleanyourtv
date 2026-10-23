@@ -111,19 +111,28 @@ final class Config {
     final String marketTickers;
     final String marketTickers1;
     final String marketTickers2;
+    /** Sports ticker board: category kicker, headline match, and sub-rows of games. */
+    final String sportsKicker;
+    final String sportsHeadline;
+    final String sportsTickers1;
+    final String sportsTickers2;
+    final String sportsApiKey;
+    final List<String> sportsList;
 
-    private Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
-                   String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
-                   Map<String, String> appBanners, String sourcePanelService, String sourcePanelAction, String inputAction,
-                   int columns, int rowsBelowDock, boolean animations, boolean advancedEffects,
-                   boolean shamsiDate, String greetingName, boolean moduleCards, boolean reducedMotion, boolean dockTitle, boolean dockRow, boolean reorderButton, String vpnApp,
-                   boolean showHomeSettingsShortcut, boolean showStats, boolean appLibrary, int backgroundColor, int skyIntensity,
-                   int[] settingsKeycodes, boolean settingsKeyPanel, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
-                   int wallpaperRotationMinutes, int wallpaperDim, boolean overlayApplied,
-                   Festival festival, int[] inputKeycodes, List<String> appKeys,
-                   List<RaceWeekend.Race> raceCalendar, boolean cinematicHome,
-                   String marketCurrency, String marketKicker, String marketHeadline,
-                   String marketTickers, String marketTickers1, String marketTickers2) {
+    Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
+           String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
+           Map<String, String> appBanners, String sourcePanelService, String sourcePanelAction, String inputAction,
+           int columns, int rowsBelowDock, boolean animations, boolean advancedEffects,
+           boolean shamsiDate, String greetingName, boolean moduleCards, boolean reducedMotion, boolean dockTitle, boolean dockRow, boolean reorderButton, String vpnApp,
+           boolean showHomeSettingsShortcut, boolean showStats, boolean appLibrary, int backgroundColor, int skyIntensity,
+           int[] settingsKeycodes, boolean settingsKeyPanel, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
+           int wallpaperRotationMinutes, int wallpaperDim, boolean overlayApplied,
+           Festival festival, int[] inputKeycodes, List<String> appKeys,
+           List<RaceWeekend.Race> raceCalendar, boolean cinematicHome,
+           String marketCurrency, String marketKicker, String marketHeadline,
+           String marketTickers, String marketTickers1, String marketTickers2,
+           String sportsKicker, String sportsHeadline, String sportsTickers1,
+           String sportsTickers2, String sportsApiKey, List<String> sportsList) {
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.dockApps = Collections.unmodifiableList(dockApps);
@@ -171,6 +180,12 @@ final class Config {
         this.marketTickers = marketTickers;
         this.marketTickers1 = marketTickers1;
         this.marketTickers2 = marketTickers2;
+        this.sportsKicker = sportsKicker;
+        this.sportsHeadline = sportsHeadline;
+        this.sportsTickers1 = sportsTickers1;
+        this.sportsTickers2 = sportsTickers2;
+        this.sportsApiKey = sportsApiKey;
+        this.sportsList = Collections.unmodifiableList(sportsList != null ? sportsList : Collections.emptyList());
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -306,6 +321,22 @@ final class Config {
         String marketTickers1 = json == null ? "" : string(json, "market_tickers_1", "");
         String marketTickers2 = json == null ? "" : string(json, "market_tickers_2", "");
 
+        String sportsKicker = json == null ? "" : string(json, "sports_kicker", "");
+        String sportsHeadline = json == null ? "" : string(json, "sports_headline", "");
+        String sportsTickers1 = json == null ? "" : string(json, "sports_tickers_1", "");
+        String sportsTickers2 = json == null ? "" : string(json, "sports_tickers_2", "");
+        String sportsApiKey = json == null ? "" : string(json, "sports_api_key", "");
+        List<String> sportsList = new ArrayList<>();
+        if (json != null && json.has("sports_list")) {
+            JSONArray arr = json.optJSONArray("sports_list");
+            if (arr != null) {
+                for (int i = 0; i < arr.length(); i++) {
+                    String s = arr.optString(i, "").trim();
+                    if (!s.isEmpty()) sportsList.add(s);
+                }
+            }
+        }
+
         return new Config(dock, fillDock, hidden, liveTv, liveTvAction, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, inputAction,
@@ -314,7 +345,8 @@ final class Config {
                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, wallpaperEnabled, wallpaper,
                 wallpapers, rotationMinutes, wallpaperDim, applied,
                 festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
-                marketCurrency, marketKicker, marketHeadline, marketTickers, marketTickers1, marketTickers2);
+                marketCurrency, marketKicker, marketHeadline, marketTickers, marketTickers1, marketTickers2,
+                sportsKicker, sportsHeadline, sportsTickers1, sportsTickers2, sportsApiKey, sportsList);
     }
 
     /**

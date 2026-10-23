@@ -20,6 +20,25 @@ import urllib.request
 DEFAULT_API_KEY = "123"
 DEFAULT_SPORTS = ["Soccer", "Fighting"]
 DEFAULT_POPULAR_LEAGUES = ["4328", "4480", "4443", "4445"]
+MONTH_NAMES = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def format_date_label(date_str, today_str=None):
+    if not date_str:
+        return ""
+    date_str = date_str.strip()
+    if today_str and date_str == today_str:
+        return "Today"
+    try:
+        parts = date_str.split("-")
+        if len(parts) == 3:
+            month = int(parts[1])
+            day = int(parts[2])
+            if 1 <= month <= 12 and 1 <= day <= 31:
+                return f"{MONTH_NAMES[month]} {day}"
+    except (ValueError, IndexError):
+        pass
+    return date_str
 
 
 def fetch_league_events(league_id, api_key=DEFAULT_API_KEY):
@@ -77,7 +96,9 @@ def parse_events(data):
     return valid
 
 
-def format_event(ev):
+def format_event(ev, today_str=None):
+    if today_str is None:
+        today_str = date.today().isoformat()
     home = (ev.get("strHomeTeam") or "").strip()
     away = (ev.get("strAwayTeam") or "").strip()
     event_name = (ev.get("strEvent") or "").strip()
@@ -90,34 +111,67 @@ def format_event(ev):
     home_score = ev.get("intHomeScore")
     away_score = ev.get("intAwayScore")
     status = (ev.get("strStatus") or "").strip()
+    if status.lower() == "null":
+        status = ""
     time_str = (ev.get("strTime") or "").strip()
     if len(time_str) >= 5 and time_str[2] == ":":
         time_str = time_str[:5]
         if time_str == "00:00":
             time_str = ""
 
+    date_str = (ev.get("dateEvent") or ev.get("strDate") or "").strip()
+    if date_str.lower() == "null":
+        date_str = ""
+    date_label = format_date_label(date_str, today_str)
+
+    has_scores = (
+        home_score is not None
+        and away_score is not None
+        and str(home_score).strip() != ""
+        and str(away_score).strip() != ""
+    )
+    upper_status = status.upper()
+    is_finished = has_scores or upper_status in ("FT", "AOT", "AET", "PEN", "FINAL")
+
     if home and away:
-        if home_score is not None and away_score is not None and home_score != "" and away_score != "":
-            status_suffix = f" ({status})" if status else ""
-            return f"{home} {home_score}-{away_score} {away}{status_suffix}"
+        if has_scores:
+            stat = status if status and upper_status != "NS" else "FT"
+            if date_label and date_label != "Today":
+                return f"{home} {home_score}-{away_score} {away} ({stat}, {date_label})"
+            return f"{home} {home_score}-{away_score} {away} ({stat})"
+        sched = []
+        if date_label:
+            sched.append(date_label)
         if time_str:
-            return f"{home} vs {away} ({time_str})"
+            sched.append(time_str)
+        if sched:
+            sep = " " if date_label == "Today" else ", "
+            return f"{home} vs {away} ({sep.join(sched)})"
         return f"{home} vs {away}"
 
     if event_name:
-        if status:
-            return f"{event_name} ({status})"
+        if is_finished:
+            stat = status if status and upper_status != "NS" else "FT"
+            if date_label and date_label != "Today":
+                return f"{event_name} ({stat}, {date_label})"
+            return f"{event_name} ({stat})"
+        sched = []
+        if date_label:
+            sched.append(date_label)
         if time_str:
-            return f"{event_name} ({time_str})"
+            sched.append(time_str)
+        if sched:
+            sep = " " if date_label == "Today" else ", "
+            return f"{event_name} ({sep.join(sched)})"
         return event_name
 
     return ""
 
 
-def assemble_ticker_board(events, separator="     "):
+def assemble_ticker_board(events, separator="     ", today_str=None):
     if not events:
         return "", "", ""
-    formatted = [f for f in (format_event(ev) for ev in events) if f]
+    formatted = [f for f in (format_event(ev, today_str=today_str) for ev in events) if f]
     headline = formatted[0] if len(formatted) > 0 else ""
     row1 = separator.join(formatted[1:4]) if len(formatted) > 1 else ""
     row2 = separator.join(formatted[4:7]) if len(formatted) > 4 else ""
@@ -160,7 +214,10 @@ def update_theme(theme_dir, api_key=DEFAULT_API_KEY, sports=None, query_date=Non
 
     headline, row1, row2 = assemble_ticker_board(all_events)
 
-    config["sports_kicker"] = config.get("sports_kicker") or "TODAY'S GAMES"
+    kicker = config.get("sports_kicker")
+    if not kicker or kicker == "TODAY'S GAMES":
+        kicker = "SPORTS"
+    config["sports_kicker"] = kicker
     config["sports_headline"] = headline
     config["sports_tickers_1"] = row1
     config["sports_tickers_2"] = row2

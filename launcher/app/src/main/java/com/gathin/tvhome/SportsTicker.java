@@ -19,8 +19,33 @@ import java.util.Locale;
 final class SportsTicker {
     private static final String DEFAULT_API_KEY = "123";
     private static final List<String> DEFAULT_LEAGUES = Arrays.asList("4328", "4480", "4443", "4445");
+    private static final String[] MONTH_NAMES = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     private SportsTicker() {
+    }
+
+    static String getTodayIso() {
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+    }
+
+    static String formatDateLabel(String dateStr, String todayStr) {
+        if (dateStr == null || dateStr.isEmpty()) return "";
+        dateStr = dateStr.trim();
+        if (todayStr != null && dateStr.equals(todayStr)) {
+            return "Today";
+        }
+        try {
+            String[] parts = dateStr.split("-");
+            if (parts.length == 3) {
+                int m = Integer.parseInt(parts[1]);
+                int d = Integer.parseInt(parts[2]);
+                if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+                    return MONTH_NAMES[m] + " " + d;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return dateStr;
     }
 
     static String[] fetch(String apiKey, List<String> leagues) {
@@ -91,18 +116,27 @@ final class SportsTicker {
         String awayScore = ev.isNull("intAwayScore") ? null : ev.optString("intAwayScore", "").trim();
         String status = ev.isNull("strStatus") ? "" : ev.optString("strStatus", "").trim();
         String timeStr = ev.isNull("strTime") ? "" : ev.optString("strTime", "").trim();
+        String dateStr = ev.isNull("dateEvent") ? (ev.isNull("strDate") ? "" : ev.optString("strDate", "").trim()) : ev.optString("dateEvent", "").trim();
         if ("null".equalsIgnoreCase(home)) home = "";
         if ("null".equalsIgnoreCase(away)) away = "";
         if ("null".equalsIgnoreCase(eventName)) eventName = "";
         if ("null".equalsIgnoreCase(status)) status = "";
         if ("null".equalsIgnoreCase(timeStr)) timeStr = "";
-        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr);
+        if ("null".equalsIgnoreCase(dateStr)) dateStr = "";
+        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr, dateStr, getTodayIso());
     }
 
     static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore, String status, String timeStr) {
+        return formatMatch(home, away, eventName, homeScore, awayScore, status, timeStr, null, null);
+    }
+
+    static String formatMatch(String home, String away, String eventName, String homeScore, String awayScore,
+                               String status, String timeStr, String dateStr, String todayStr) {
         if (home != null && "null".equalsIgnoreCase(home.trim())) home = "";
         if (away != null && "null".equalsIgnoreCase(away.trim())) away = "";
         if (eventName != null && "null".equalsIgnoreCase(eventName.trim())) eventName = "";
+        if (status != null && "null".equalsIgnoreCase(status.trim())) status = "";
+        if (timeStr != null && "null".equalsIgnoreCase(timeStr.trim())) timeStr = "";
 
         if (timeStr != null && timeStr.length() >= 5 && timeStr.charAt(2) == ':') {
             timeStr = timeStr.substring(0, 5);
@@ -111,28 +145,52 @@ final class SportsTicker {
             }
         }
 
+        String dateLabel = formatDateLabel(dateStr, todayStr);
+        boolean hasScores = homeScore != null && awayScore != null && !homeScore.isEmpty() && !awayScore.isEmpty();
+        String upperStatus = status != null ? status.toUpperCase(Locale.US) : "";
+        boolean isFinished = hasScores || "FT".equals(upperStatus) || "AOT".equals(upperStatus) || "AET".equals(upperStatus)
+                || "PEN".equals(upperStatus) || "FINAL".equals(upperStatus);
+
         if (home != null && away != null && !home.isEmpty() && !away.isEmpty()) {
-            if (homeScore != null && awayScore != null && !homeScore.isEmpty() && !awayScore.isEmpty()) {
-                String suffix = (status != null && !status.isEmpty()) ? " (" + status + ")" : "";
-                return home + " " + homeScore + "-" + awayScore + " " + away + suffix;
+            if (hasScores) {
+                String stat = (status != null && !status.isEmpty() && !"NS".equals(upperStatus)) ? status : "FT";
+                if (!dateLabel.isEmpty() && !"Today".equals(dateLabel)) {
+                    return home + " " + homeScore + "-" + awayScore + " " + away + " (" + stat + ", " + dateLabel + ")";
+                }
+                return home + " " + homeScore + "-" + awayScore + " " + away + " (" + stat + ")";
             }
-            if (timeStr != null && !timeStr.isEmpty()) {
-                return home + " vs " + away + " (" + timeStr + ")";
+            String sched = buildScheduleSuffix(dateLabel, timeStr);
+            if (!sched.isEmpty()) {
+                return home + " vs " + away + " (" + sched + ")";
             }
             return home + " vs " + away;
         }
 
         if (eventName != null && !eventName.isEmpty()) {
-            if (status != null && !status.isEmpty()) {
-                return eventName + " (" + status + ")";
+            if (isFinished) {
+                String stat = (status != null && !status.isEmpty() && !"NS".equals(upperStatus)) ? status : "FT";
+                if (!dateLabel.isEmpty() && !"Today".equals(dateLabel)) {
+                    return eventName + " (" + stat + ", " + dateLabel + ")";
+                }
+                return eventName + " (" + stat + ")";
             }
-            if (timeStr != null && !timeStr.isEmpty()) {
-                return eventName + " (" + timeStr + ")";
+            String sched = buildScheduleSuffix(dateLabel, timeStr);
+            if (!sched.isEmpty()) {
+                return eventName + " (" + sched + ")";
             }
             return eventName;
         }
 
         return null;
+    }
+
+    private static String buildScheduleSuffix(String dateLabel, String timeStr) {
+        if (!dateLabel.isEmpty() && timeStr != null && !timeStr.isEmpty()) {
+            return "Today".equals(dateLabel) ? ("Today " + timeStr) : (dateLabel + ", " + timeStr);
+        }
+        if (!dateLabel.isEmpty()) return dateLabel;
+        if (timeStr != null && !timeStr.isEmpty()) return timeStr;
+        return "";
     }
 
     static String[] assemble(List<String> events, String sep) {

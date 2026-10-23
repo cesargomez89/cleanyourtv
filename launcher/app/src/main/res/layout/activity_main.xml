@@ -94,9 +94,9 @@
             android:letterSpacing="0.12" />
     </LinearLayout>
 
-    <!-- Market ticker board: USD/MXN, S&P 500, popular stocks. Configured via config.json market_headline. -->
+    <!-- Ticker container: holds market and sports panels in a vertical flow. -->
     <LinearLayout
-        android:id="@+id/marketPanel"
+        android:id="@+id/tickerContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|left"
@@ -104,67 +104,148 @@
         android:layout_marginTop="110dp"
         android:orientation="vertical"
         android:focusable="false"
-        android:importantForAccessibility="no"
-        android:visibility="gone">
+        android:importantForAccessibility="no">
 
+        <!-- Market ticker board: USD/MXN, S&P 500, popular stocks. Configured via config.json market_headline. -->
         <LinearLayout
+            android:id="@+id/marketPanel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:visibility="gone">
 
-            <!-- A short emerald accent bar. -->
-            <View
-                android:layout_width="3dp"
-                android:layout_height="13dp"
-                android:layout_marginEnd="10dp"
-                android:background="#FF2ECC71" />
-
-            <TextView
-                android:id="@+id/marketKicker"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- A short emerald accent bar. -->
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="13dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="#FF2ECC71" />
+
+                <TextView
+                    android:id="@+id/marketKicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="11sp"
+                    android:fontFamily="@font/outfit_medium"
+                    android:letterSpacing="0.22"
+                    android:textAllCaps="true" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/marketHeadline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:singleLine="true"
-                android:textColor="#B3FFFFFF"
+                android:textColor="#FFFFFFFF"
+                android:textSize="18sp"
+                android:fontFamily="@font/outfit_light"
+                android:letterSpacing="-0.01"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/marketTickers1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:singleLine="true"
+                android:textColor="#CCFFFFFF"
                 android:textSize="11sp"
                 android:fontFamily="@font/outfit_medium"
-                android:letterSpacing="0.22"
-                android:textAllCaps="true" />
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/marketTickers2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:singleLine="true"
+                android:textColor="#CCFFFFFF"
+                android:textSize="11sp"
+                android:fontFamily="@font/outfit_medium"
+                android:letterSpacing="0.08" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/marketHeadline"
+        <!-- Sports ticker board: daily scores and upcoming matches. Configured via config.json sports_headline. -->
+        <LinearLayout
+            android:id="@+id/sportsPanel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:singleLine="true"
-            android:textColor="#FFFFFFFF"
-            android:textSize="18sp"
-            android:fontFamily="@font/outfit_light"
-            android:letterSpacing="-0.01"
-            android:includeFontPadding="false" />
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:visibility="gone">
 
-        <TextView
-            android:id="@+id/marketTickers1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:singleLine="true"
-            android:textColor="#CCFFFFFF"
-            android:textSize="11sp"
-            android:fontFamily="@font/outfit_medium"
-            android:letterSpacing="0.08" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/marketTickers2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:singleLine="true"
-            android:textColor="#CCFFFFFF"
-            android:textSize="11sp"
-            android:fontFamily="@font/outfit_medium"
-            android:letterSpacing="0.08" />
+                <!-- A short athletic orange accent bar. -->
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="13dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="#FFFF6B00" />
+
+                <TextView
+                    android:id="@+id/sportsKicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="11sp"
+                    android:fontFamily="@font/outfit_medium"
+                    android:letterSpacing="0.22"
+                    android:textAllCaps="true" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/sportsHeadline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:singleLine="true"
+                android:textColor="#FFFFFFFF"
+                android:textSize="18sp"
+                android:fontFamily="@font/outfit_light"
+                android:letterSpacing="-0.01"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/sportsTickers1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:singleLine="true"
+                android:textColor="#CCFFFFFF"
+                android:textSize="11sp"
+                android:fontFamily="@font/outfit_medium"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/sportsTickers2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:singleLine="true"
+                android:textColor="#CCFFFFFF"
+                android:textSize="11sp"
+                android:fontFamily="@font/outfit_medium"
+                android:letterSpacing="0.08" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the

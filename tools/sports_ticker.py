@@ -12,12 +12,37 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.parse
 import urllib.request
 
 
 DEFAULT_API_KEY = "123"
 DEFAULT_SPORTS = ["Soccer", "Fighting"]
+DEFAULT_POPULAR_LEAGUES = ["4328", "4480", "4443", "4445"]
+
+
+def fetch_league_events(league_id, api_key=DEFAULT_API_KEY):
+    events = []
+    for endpoint in ("eventspastleague.php", "eventsnextleague.php"):
+        url = f"https://www.thesportsdb.com/api/v1/json/{api_key}/{endpoint}?id={league_id}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 CleanYourTV/1.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                events.extend(parse_events(data))
+        except Exception as e:
+            print(f"Warning: failed to fetch league {league_id} ({endpoint}): {e}", file=sys.stderr)
+        time.sleep(0.4)
+    return events
+
+
+def fetch_all_leagues(leagues, api_key=DEFAULT_API_KEY):
+    combined = []
+    for lid in leagues:
+        events = fetch_league_events(str(lid).strip(), api_key=api_key)
+        combined.extend(events)
+    return combined
 
 
 def fetch_sports_day(sport, query_date=None, api_key=DEFAULT_API_KEY):
@@ -115,14 +140,24 @@ def update_theme(theme_dir, api_key=DEFAULT_API_KEY, sports=None, query_date=Non
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    if sports is None:
-        configured_sports = config.get("sports_list")
-        if isinstance(configured_sports, list) and configured_sports:
-            sports = configured_sports
-        else:
-            sports = DEFAULT_SPORTS
+    leagues = config.get("sports_leagues")
+    if leagues is None:
+        leagues = DEFAULT_POPULAR_LEAGUES
 
-    all_events = fetch_all_sports(sports, query_date=query_date, api_key=api_key)
+    all_events = fetch_all_leagues(leagues, api_key=api_key)
+    if not all_events:
+        if sports is None:
+            configured_sports = config.get("sports_list")
+            if isinstance(configured_sports, list) and configured_sports:
+                sports = configured_sports
+            else:
+                sports = DEFAULT_SPORTS
+        all_events = fetch_all_sports(sports, query_date=query_date, api_key=api_key)
+
+    if not all_events:
+        print("Warning: no sports events fetched, preserving existing config.", file=sys.stderr)
+        return
+
     headline, row1, row2 = assemble_ticker_board(all_events)
 
     config["sports_kicker"] = config.get("sports_kicker") or "TODAY'S GAMES"

@@ -12,6 +12,7 @@ backup/
 .devenv.*
 devenv.local.nix
 .direnv/
+.wiki/
 
 # Generated install bundles and JVM crash reports stay out of contributions.
 *.apk

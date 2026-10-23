@@ -20,7 +20,8 @@ public class ConfigTest {
                 Collections.emptyList(), Collections.emptyList(), false,
                 "", "", "", "", "", "",
                 "FIGHT NIGHT", "Dalton Smith vs Alberto Puello (21:00)", "Row 1", "Row 2",
-                "custom_key", Arrays.asList("Soccer", "Fighting")
+                "custom_key", Arrays.asList("Soccer", "Fighting"),
+                Arrays.asList("4328", "4480", "4443", "4445")
         );
 
         assertEquals("FIGHT NIGHT", cfg.sportsKicker);
@@ -29,5 +30,6 @@ public class ConfigTest {
         assertEquals("Row 2", cfg.sportsTickers2);
         assertEquals("custom_key", cfg.sportsApiKey);
         assertEquals(Arrays.asList("Soccer", "Fighting"), cfg.sportsList);
+        assertEquals(Arrays.asList("4328", "4480", "4443", "4445"), cfg.sportsLeagues);
     }
 }

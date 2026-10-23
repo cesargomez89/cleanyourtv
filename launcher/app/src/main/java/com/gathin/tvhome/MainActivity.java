@@ -151,7 +151,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View sportsPanel;
     private TextView sportsKicker, sportsHeadline, sportsTickers1, sportsTickers2;
     private String sportsKickerText, sportsHeadlineText, sportsTickers1Text, sportsTickers2Text, sportsApiKey;
-    private List<String> sportsList;
+    private List<String> sportsLeagues;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -363,7 +363,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         sportsTickers1Text = cfg.sportsTickers1;
         sportsTickers2Text = cfg.sportsTickers2;
         sportsApiKey = cfg.sportsApiKey;
-        sportsList = cfg.sportsList;
+        sportsLeagues = cfg.sportsLeagues;
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -2128,7 +2128,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return;
             }
             new Thread(() -> {
-                String[] result = SportsTicker.fetch(sportsApiKey, sportsList);
+                String[] result = SportsTicker.fetch(sportsApiKey, sportsLeagues);
                 if (result == null) return;
                 handler.post(() -> applySportsResult(result));
             }).start();

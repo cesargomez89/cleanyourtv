@@ -18,31 +18,31 @@ import java.util.Locale;
 
 final class SportsTicker {
     private static final String DEFAULT_API_KEY = "123";
-    private static final List<String> DEFAULT_SPORTS = Arrays.asList("Soccer", "Fighting");
+    private static final List<String> DEFAULT_LEAGUES = Arrays.asList("4328", "4480", "4443", "4445");
 
     private SportsTicker() {
     }
 
-    static String[] fetch(String apiKey, List<String> sports) {
+    static String[] fetch(String apiKey, List<String> leagues) {
         String key = (apiKey != null && !apiKey.trim().isEmpty()) ? apiKey.trim() : DEFAULT_API_KEY;
-        List<String> sportsToFetch = (sports != null && !sports.isEmpty()) ? sports : DEFAULT_SPORTS;
-        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        List<String> leaguesToFetch = (leagues != null && !leagues.isEmpty()) ? leagues : DEFAULT_LEAGUES;
 
         List<String> allEvents = new ArrayList<>();
-        for (String sport : sportsToFetch) {
-            String json = fetchDayJson(sport, today, key);
-            if (json != null) {
-                allEvents.addAll(parseEvents(json));
-            }
+        for (String leagueId : leaguesToFetch) {
+            String past = fetchEndpoint("eventspastleague.php?id=" + leagueId, key);
+            if (past != null) allEvents.addAll(parseEvents(past));
+            try { Thread.sleep(250); } catch (InterruptedException ignored) {}
+            String next = fetchEndpoint("eventsnextleague.php?id=" + leagueId, key);
+            if (next != null) allEvents.addAll(parseEvents(next));
+            try { Thread.sleep(250); } catch (InterruptedException ignored) {}
         }
         return assemble(allEvents, "     ");
     }
 
-    private static String fetchDayJson(String sport, String dateStr, String apiKey) {
+    private static String fetchEndpoint(String path, String apiKey) {
         HttpURLConnection conn = null;
         try {
-            String encodedSport = URLEncoder.encode(sport, "UTF-8");
-            URL url = new URL("https://www.thesportsdb.com/api/v1/json/" + apiKey + "/eventsday.php?d=" + dateStr + "&s=" + encodedSport);
+            URL url = new URL("https://www.thesportsdb.com/api/v1/json/" + apiKey + "/" + path);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 CleanYourTV/1.0");
             conn.setConnectTimeout(4000);

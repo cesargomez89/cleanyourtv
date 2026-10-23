@@ -115,7 +115,7 @@ class SportsTickerTest(unittest.TestCase):
                 SAMPLE_EVENTS_FIGHTING["events"][1],
                 {"strEvent": "Fifth Match", "strTime": "20:00:00"}
             ]
-            with patch("tools.sports_ticker.fetch_all_sports", return_value=all_events):
+            with patch("tools.sports_ticker.fetch_all_leagues", return_value=all_events):
                 update_theme(str(theme_path), api_key="123", push=False)
 
             updated = json.loads(cfg_file.read_text())

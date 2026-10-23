@@ -118,6 +118,7 @@ final class Config {
     final String sportsTickers2;
     final String sportsApiKey;
     final List<String> sportsList;
+    final List<String> sportsLeagues;
 
     Config(List<String> dockApps, boolean fillDock, List<String> hiddenApps, String liveTvPackage,
            String liveTvAction, Map<String, String> launchActions, Map<String, String> appLabels,
@@ -132,7 +133,8 @@ final class Config {
            String marketCurrency, String marketKicker, String marketHeadline,
            String marketTickers, String marketTickers1, String marketTickers2,
            String sportsKicker, String sportsHeadline, String sportsTickers1,
-           String sportsTickers2, String sportsApiKey, List<String> sportsList) {
+           String sportsTickers2, String sportsApiKey, List<String> sportsList,
+           List<String> sportsLeagues) {
         this.inputKeycodes = inputKeycodes;
         this.appKeys = Collections.unmodifiableList(appKeys);
         this.dockApps = Collections.unmodifiableList(dockApps);
@@ -186,6 +188,8 @@ final class Config {
         this.sportsTickers2 = sportsTickers2;
         this.sportsApiKey = sportsApiKey;
         this.sportsList = Collections.unmodifiableList(sportsList != null ? sportsList : Collections.emptyList());
+        this.sportsLeagues = Collections.unmodifiableList(sportsLeagues != null && !sportsLeagues.isEmpty()
+                ? sportsLeagues : Arrays.asList("4328", "4480", "4443", "4445"));
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -336,6 +340,16 @@ final class Config {
                 }
             }
         }
+        List<String> sportsLeagues = new ArrayList<>();
+        if (json != null && json.has("sports_leagues")) {
+            JSONArray arr = json.optJSONArray("sports_leagues");
+            if (arr != null) {
+                for (int i = 0; i < arr.length(); i++) {
+                    String s = arr.optString(i, "").trim();
+                    if (!s.isEmpty()) sportsLeagues.add(s);
+                }
+            }
+        }
 
         return new Config(dock, fillDock, hidden, liveTv, liveTvAction, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
@@ -346,7 +360,7 @@ final class Config {
                 wallpapers, rotationMinutes, wallpaperDim, applied,
                 festival, inputKeycodes, appKeys, json == null ? Collections.emptyList() : raceCalendar(json), cinematic,
                 marketCurrency, marketKicker, marketHeadline, marketTickers, marketTickers1, marketTickers2,
-                sportsKicker, sportsHeadline, sportsTickers1, sportsTickers2, sportsApiKey, sportsList);
+                sportsKicker, sportsHeadline, sportsTickers1, sportsTickers2, sportsApiKey, sportsList, sportsLeagues);
     }
 
     /**
